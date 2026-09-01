@@ -11,6 +11,7 @@ import RecommendationPanel from "@/components/RecommendationPanel";
 import ForecastChart from "@/components/ForecastChart";
 import CropManager from "@/components/CropManager";
 import FarmSelector from "@/components/FarmSelector";
+import Icon from "@/components/Icon";
 
 // Dynamic import prevents SSR issues with Leaflet
 const FarmMap = dynamic(() => import("@/components/FarmMap"), { ssr: false });
@@ -193,36 +194,46 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Farm Dashboard</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-bold tracking-tight text-ink">
+            Farm <span className="bg-gradient-to-r from-emerald-400 to-lime-300 bg-clip-text text-transparent">Mission Control</span>
+          </h1>
+          <p className="mt-0.5 text-sm text-mist">
             AgriTwin agriculture intelligence — Punjab, Pakistan
           </p>
         </div>
         <div className="flex items-center gap-3">
           <span
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[11px] font-medium uppercase tracking-wide ${
               apiStatus === "online"
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
+                ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                : "border-red-400/30 bg-red-400/10 text-red-300"
             }`}
           >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                apiStatus === "online" ? "bg-green-500" : "bg-red-500"
-              }`}
-            />
-            Backend {apiStatus}
+            <span className="relative flex h-2 w-2">
+              {apiStatus === "online" && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              )}
+              <span
+                className={`relative inline-flex h-2 w-2 rounded-full ${
+                  apiStatus === "online" ? "bg-emerald-400" : "bg-red-400"
+                }`}
+              />
+            </span>
+            {apiStatus}
           </span>
           {user ? (
-            <span className="text-xs text-gray-600">
+            <span className="flex items-center gap-1.5 text-xs text-mist">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand/15 text-[10px] font-bold uppercase text-brand">
+                {user.name.charAt(0)}
+              </span>
               {user.name}
             </span>
           ) : (
             <Link
               href="/login"
-              className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+              className="rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-abyss shadow-[0_4px_16px_rgba(16,185,129,0.35)] transition-shadow hover:shadow-[0_4px_24px_rgba(16,185,129,0.55)]"
             >
               Sign In
             </Link>
@@ -231,8 +242,9 @@ export default function DashboardPage() {
           {selectedFarm && (
             <Link
               href={`/farms/${selectedFarm.id}`}
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+              className="flex items-center gap-1.5 rounded-lg border border-white/12 bg-white/6 px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-brand/40 hover:bg-brand/10 hover:text-brand"
             >
+              <Icon name="activity" size={13} />
               View Details
             </Link>
           )}
@@ -242,7 +254,7 @@ export default function DashboardPage() {
       {/* ── Main Grid ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left: Map (spans 2 cols) */}
-        <div className="lg:col-span-2 h-[480px] rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="glass-panel lg:col-span-2 h-[480px] overflow-hidden">
           <FarmMap
             center={
               selectedFarm?.latitude && selectedFarm?.longitude
@@ -260,9 +272,9 @@ export default function DashboardPage() {
         {/* Right: Health score + Crop Manager */}
         <div className="space-y-6">
           {healthLoading ? (
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm text-center">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-green-500 border-t-transparent mx-auto mb-2" />
-              <p className="text-xs text-gray-500">Computing health score...</p>
+            <div className="glass-panel p-5 text-center">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent mx-auto mb-2" />
+              <p className="text-xs text-mist">Computing health score...</p>
             </div>
           ) : health ? (
             <HealthScoreCard
@@ -296,8 +308,9 @@ export default function DashboardPage() {
 
           {/* Farm creation form */}
           {showCreateForm && (
-            <div className="rounded-xl border border-green-300 bg-green-50 p-5 shadow-sm">
-              <h3 className="mb-3 text-sm font-semibold text-green-800 uppercase">
+            <div className="glass-panel brand-glow p-5">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand">
+                <Icon name="mapPin" size={14} />
                 Create Farm
               </h3>
               <div className="space-y-3">
@@ -306,13 +319,13 @@ export default function DashboardPage() {
                   placeholder="Farm name"
                   value={newFarmName}
                   onChange={(e) => setNewFarmName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+                  className="input-dark"
                 />
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label className="mb-1 block text-xs font-medium text-mist">
                     District{" "}
                     {districtAutoDetected && (
-                      <span className="font-normal text-green-600">
+                      <span className="font-normal text-brand">
                         · auto-detected from location
                       </span>
                     )}
@@ -325,16 +338,17 @@ export default function DashboardPage() {
                       setNewFarmDistrict(e.target.value);
                       setDistrictAutoDetected(false);
                     }}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+                    className="input-dark"
                   />
                 </div>
                 {drawnCentroid && (
-                  <p className="text-xs text-gray-500">
-                    📍 {drawnCentroid[0].toFixed(5)}, {drawnCentroid[1].toFixed(5)}
+                  <p className="flex items-center gap-1.5 text-xs text-mist">
+                    <Icon name="mapPin" size={12} className="text-brand" />
+                    {drawnCentroid[0].toFixed(5)}, {drawnCentroid[1].toFixed(5)}
                     {drawnArea !== null && (
                       <>
                         {" "}·{" "}
-                        <span className="font-semibold text-green-700">
+                        <span className="font-semibold text-brand">
                           {drawnArea.toLocaleString()} acres
                         </span>{" "}
                         ({(drawnArea * 0.404686).toFixed(1)} ha)
@@ -346,7 +360,7 @@ export default function DashboardPage() {
                   <button
                     onClick={handleCreateFarm}
                     disabled={!newFarmName.trim()}
-                    className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-40"
+                    className="flex-1 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-4 py-2 text-sm font-semibold text-abyss shadow-[0_4px_16px_rgba(16,185,129,0.35)] transition-shadow hover:shadow-[0_4px_24px_rgba(16,185,129,0.55)] disabled:opacity-40 disabled:shadow-none"
                   >
                     Save Farm
                   </button>
@@ -359,7 +373,7 @@ export default function DashboardPage() {
                       setDistrictAutoDetected(false);
                       setDrawReset((n) => n + 1);
                     }}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                    className="rounded-lg border border-white/12 px-4 py-2 text-sm text-mist transition-colors hover:bg-white/6 hover:text-ink"
                   >
                     Cancel
                   </button>
@@ -379,12 +393,12 @@ export default function DashboardPage() {
       {/* ── Third Row: NDVI ───────────────────────────────────────────────── */}
       <div className="mt-6 grid grid-cols-1 gap-6">
         {ndviLoading ? (
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h3 className="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">
+          <div className="glass-panel p-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-mist">
               NDVI — 12-Month Trend
             </h3>
             <div className="flex items-center justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent" />
             </div>
           </div>
         ) : (
@@ -395,13 +409,17 @@ export default function DashboardPage() {
       {/* ── Fourth Row: AI Recommendation ─────────────────────────────────── */}
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-600">AI Analysis</span>
+          <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <Icon name="spark" size={15} className="text-brand" />
+            AI Analysis
+          </span>
           {selectedFarm && (
             <button
               onClick={handleGetRecommendation}
               disabled={recLoading}
-              className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-4 py-1.5 text-sm font-semibold text-abyss shadow-[0_4px_16px_rgba(16,185,129,0.35)] transition-shadow hover:shadow-[0_4px_24px_rgba(16,185,129,0.55)] disabled:opacity-50 disabled:shadow-none"
             >
+              <Icon name="bot" size={14} />
               {recLoading ? "Analyzing..." : "Generate Recommendation"}
             </button>
           )}
@@ -413,17 +431,18 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Data Sources Footer ──────────────────────────────────────────── */}
-      <div className="mt-8 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="glass-panel mt-8 p-4">
+        <h3 className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-dim">
+          <Icon name="database" size={12} />
           Data Sources
         </h3>
-        <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-          <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">Open-Meteo (Weather + Soil)</span>
-          <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">NASA POWER (Historical Climate)</span>
-          <span className="rounded bg-green-50 px-2 py-1 text-green-700">MODIS Terra (NDVI)</span>
-          <span className="rounded bg-purple-50 px-2 py-1 text-purple-700">AgriCore (Score Engine)</span>
-          <span className="rounded bg-teal-50 px-2 py-1 text-teal-700">Punjab Crop Knowledge</span>
-          <span className="rounded bg-yellow-50 px-2 py-1 text-yellow-700">OSM Nominatim (Geocoding)</span>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="rounded-md border border-sky-400/25 bg-sky-400/10 px-2 py-1 text-sky-300">Open-Meteo (Weather + Soil)</span>
+          <span className="rounded-md border border-orange-400/25 bg-orange-400/10 px-2 py-1 text-orange-300">NASA POWER (Historical Climate)</span>
+          <span className="rounded-md border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-emerald-300">MODIS Terra (NDVI)</span>
+          <span className="rounded-md border border-purple-400/25 bg-purple-400/10 px-2 py-1 text-purple-300">AgriCore (Score Engine)</span>
+          <span className="rounded-md border border-teal-400/25 bg-teal-400/10 px-2 py-1 text-teal-300">Punjab Crop Knowledge</span>
+          <span className="rounded-md border border-yellow-400/25 bg-yellow-400/10 px-2 py-1 text-yellow-300">OSM Nominatim (Geocoding)</span>
         </div>
       </div>
     </div>

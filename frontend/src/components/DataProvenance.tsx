@@ -1,5 +1,7 @@
 "use client";
 
+import Icon, { type IconName } from "@/components/Icon";
+
 interface ProvenanceData {
   weather_source: string;
   weather_retrieved_at: string;
@@ -11,11 +13,11 @@ interface ProvenanceData {
 export default function DataProvenance({ data }: { data: ProvenanceData | null }) {
   if (!data) return null;
 
-  const sources = [
-    { label: "Weather", value: data.weather_source, color: "text-blue-700 bg-blue-50" },
-    { label: "Satellite", value: data.satellite_source, color: "text-green-700 bg-green-50" },
-    { label: "Score Engine", value: data.score_engine, color: "text-purple-700 bg-purple-50" },
-    { label: "Crop Knowledge", value: data.crop_knowledge, color: "text-teal-700 bg-teal-50" },
+  const sources: { label: string; value: string; icon: IconName; color: string }[] = [
+    { label: "Weather", value: data.weather_source, icon: "cloudSun", color: "text-sky-300 bg-sky-500/12 ring-sky-400/20" },
+    { label: "Satellite", value: data.satellite_source, icon: "satellite", color: "text-emerald-300 bg-emerald-500/12 ring-emerald-400/20" },
+    { label: "Score Engine", value: data.score_engine, icon: "activity", color: "text-purple-300 bg-purple-500/12 ring-purple-400/20" },
+    { label: "Crop Knowledge", value: data.crop_knowledge, icon: "wheat", color: "text-teal-300 bg-teal-500/12 ring-teal-400/20" },
   ];
 
   const retrievedAt = data.weather_retrieved_at
@@ -26,13 +28,15 @@ export default function DataProvenance({ data }: { data: ProvenanceData | null }
     : null;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+    <div className="glass-panel p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-mist">
+          <Icon name="database" size={12} className="text-dim" />
           Data Provenance
         </h3>
         {retrievedAt && (
-          <span className="text-[10px] text-gray-400">
+          <span className="flex items-center gap-1 text-[10px] text-dim">
+            <Icon name="clock" size={10} />
             Retrieved at {retrievedAt}
           </span>
         )}
@@ -41,8 +45,9 @@ export default function DataProvenance({ data }: { data: ProvenanceData | null }
         {sources.map((s) => (
           <span
             key={s.label}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${s.color}`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ${s.color}`}
           >
+            <Icon name={s.icon} size={12} className="opacity-70" />
             <span className="text-[10px] opacity-60">{s.label}:</span>
             {s.value}
           </span>

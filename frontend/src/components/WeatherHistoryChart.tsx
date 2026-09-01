@@ -12,6 +12,15 @@ import {
   YAxis,
 } from "recharts";
 import type { WeatherObservation } from "@/lib/api";
+import Icon from "@/components/Icon";
+
+const TOOLTIP_STYLE = {
+  fontSize: 12,
+  borderRadius: 10,
+  background: "rgba(11,18,16,0.95)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  color: "#ecf5ef",
+};
 
 interface WeatherHistoryChartProps {
   observations: WeatherObservation[];
@@ -25,10 +34,11 @@ function parseTs(ts: string | null): Date | null {
 export default function WeatherHistoryChart({ observations }: WeatherHistoryChartProps) {
   const header = (
     <div className="mb-4">
-      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+      <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-mist">
+        <Icon name="cloudSun" size={13} className="text-sky-400" />
         Weather Observations
       </h3>
-      <p className="text-[10px] text-gray-400 mt-0.5">
+      <p className="mt-0.5 text-[10px] text-dim">
         Ground conditions captured on each intelligence refresh · Open-Meteo
       </p>
     </div>
@@ -36,9 +46,9 @@ export default function WeatherHistoryChart({ observations }: WeatherHistoryChar
 
   if (observations.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="glass-panel p-5">
         {header}
-        <p className="text-sm text-gray-400 py-8 text-center">
+        <p className="py-8 text-center text-sm text-dim">
           No weather observations recorded yet.
         </p>
       </div>
@@ -61,27 +71,32 @@ export default function WeatherHistoryChart({ observations }: WeatherHistoryChar
   });
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="glass-panel p-5">
       {header}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 5, right: 0, left: -18, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-            <YAxis yAxisId="left" domain={[0, 100]} tick={{ fontSize: 11 }} />
-            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 10, fill: "#9db4a7" }}
+              interval="preserveStartEnd"
+              stroke="rgba(255,255,255,0.15)"
+            />
+            <YAxis yAxisId="left" domain={[0, 100]} tick={{ fontSize: 11, fill: "#9db4a7" }} stroke="rgba(255,255,255,0.15)" />
+            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#9db4a7" }} stroke="rgba(255,255,255,0.15)" />
             <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8 }}
+              contentStyle={TOOLTIP_STYLE}
               labelFormatter={(_, payload) =>
                 payload?.length ? (payload[0].payload as { time: string }).time : ""
               }
             />
-            <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
+            <Legend wrapperStyle={{ fontSize: 11, color: "#9db4a7" }} iconSize={8} />
             <Bar
               yAxisId="right"
               dataKey="rainfall_mm"
               name="Rain (mm)"
-              fill="#bae6fd"
+              fill="rgba(56,189,248,0.35)"
               radius={[2, 2, 0, 0]}
             />
             <Line
@@ -89,9 +104,9 @@ export default function WeatherHistoryChart({ observations }: WeatherHistoryChar
               type="monotone"
               dataKey="temperature_c"
               name="Temp (°C)"
-              stroke="#ef4444"
+              stroke="#f87171"
               strokeWidth={2}
-              dot={{ r: 2, fill: "#ef4444" }}
+              dot={{ r: 2, fill: "#f87171", stroke: "none" }}
               connectNulls
             />
             <Line
@@ -99,9 +114,9 @@ export default function WeatherHistoryChart({ observations }: WeatherHistoryChar
               type="monotone"
               dataKey="humidity_pct"
               name="Humidity (%)"
-              stroke="#0ea5e9"
+              stroke="#38bdf8"
               strokeWidth={2}
-              dot={{ r: 2, fill: "#0ea5e9" }}
+              dot={{ r: 2, fill: "#38bdf8", stroke: "none" }}
               connectNulls
             />
           </ComposedChart>

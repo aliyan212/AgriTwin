@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Layer, LayerGroup, LeafletMouseEvent, Map as LeafletMap } from "leaflet";
+import Icon from "@/components/Icon";
 
 type LatLngTuple = [number, number];
 type LeafletModule = typeof import("leaflet");
@@ -435,68 +436,74 @@ export default function FarmMap({
                 setDrawnPoints([]);
                 setIsDrawing(true);
               }}
-              className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-green-700"
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-3 py-1.5 text-sm font-semibold text-abyss shadow-[0_4px_16px_rgba(16,185,129,0.4)] transition-shadow hover:shadow-[0_4px_24px_rgba(16,185,129,0.6)]"
             >
-              ✏️ Draw Farm
+              <Icon name="pencil" size={13} />
+              Draw Farm
             </button>
           ) : (
             <div className="flex gap-2">
               <button
                 onClick={finishPolygon}
                 disabled={drawnPoints.length < 3}
-                className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-green-700 disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-3 py-1.5 text-sm font-semibold text-abyss shadow-[0_4px_16px_rgba(16,185,129,0.4)] transition-shadow hover:shadow-[0_4px_24px_rgba(16,185,129,0.6)] disabled:opacity-40 disabled:shadow-none"
               >
-                ✓ Finish ({drawnPoints.length})
+                <Icon name="check" size={13} strokeWidth={2.5} />
+                Finish ({drawnPoints.length})
               </button>
               <button
                 onClick={undoPoint}
                 disabled={drawnPoints.length === 0}
-                className="rounded-lg bg-white px-2.5 py-1.5 text-sm font-medium text-gray-700 shadow hover:bg-gray-50 disabled:opacity-40"
+                className="flex items-center gap-1 rounded-lg border border-white/12 bg-panel/90 px-2.5 py-1.5 text-sm font-medium text-mist shadow-lg backdrop-blur transition-colors hover:bg-white/10 hover:text-ink disabled:opacity-40"
                 title="Undo last point (Z)"
               >
-                ↩ Undo
+                <Icon name="undo" size={13} />
+                Undo
               </button>
               <button
                 onClick={cancelDrawing}
-                className="rounded-lg bg-red-500 px-2.5 py-1.5 text-sm font-medium text-white shadow hover:bg-red-600"
+                className="flex items-center rounded-lg bg-red-500/90 px-2.5 py-1.5 text-sm font-medium text-white shadow-lg backdrop-blur transition-colors hover:bg-red-500"
                 title="Cancel (Esc)"
               >
-                ✕
+                <Icon name="x" size={13} />
               </button>
             </div>
           ))}
 
         {/* Basemap toggle */}
-        <div className="flex overflow-hidden rounded-lg bg-white shadow">
+        <div className="flex overflow-hidden rounded-lg border border-white/12 bg-panel/90 shadow-lg backdrop-blur">
           <button
             onClick={() => setBasemap("satellite")}
-            className={`px-2.5 py-1 text-xs font-medium ${
+            className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors ${
               basemap === "satellite"
-                ? "bg-green-600 text-white"
-                : "text-gray-600 hover:bg-gray-50"
+                ? "bg-brand/20 text-brand"
+                : "text-mist hover:bg-white/8 hover:text-ink"
             }`}
           >
-            🛰 Satellite
+            <Icon name="satellite" size={12} />
+            Satellite
           </button>
           <button
             onClick={() => setBasemap("street")}
-            className={`px-2.5 py-1 text-xs font-medium ${
+            className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors ${
               basemap === "street"
-                ? "bg-green-600 text-white"
-                : "text-gray-600 hover:bg-gray-50"
+                ? "bg-brand/20 text-brand"
+                : "text-mist hover:bg-white/8 hover:text-ink"
             }`}
           >
-            🗺 Street
+            <Icon name="layers" size={12} />
+            Street
           </button>
         </div>
 
         <button
           onClick={locateMe}
           disabled={locating}
-          className="w-fit rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 shadow hover:bg-blue-50 disabled:opacity-50"
+          className="flex w-fit items-center gap-1.5 rounded-lg border border-white/12 bg-panel/90 px-2.5 py-1.5 text-xs font-medium text-sky-300 shadow-lg backdrop-blur transition-colors hover:bg-white/8 disabled:opacity-50"
           title="Center the map on your current position"
         >
-          {locating ? "Locating…" : "📍 Locate me"}
+          <Icon name="crosshair" size={12} />
+          {locating ? "Locating…" : "Locate me"}
         </button>
       </div>
 
@@ -505,26 +512,26 @@ export default function FarmMap({
         onSubmit={runSearch}
         className="absolute top-3 right-3 z-[1000] w-64"
       >
-        <div className="flex overflow-hidden rounded-lg bg-white shadow">
+        <div className="flex overflow-hidden rounded-lg border border-white/12 bg-panel/90 shadow-lg backdrop-blur">
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setSearchResults.length > 0 && setSearchOpen(true)}
+            onFocus={() => searchResults.length > 0 && setSearchOpen(true)}
             placeholder="Search location in Pakistan…"
-            className="min-w-0 flex-1 px-3 py-1.5 text-sm focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent px-3 py-1.5 text-sm text-ink placeholder:text-dim focus:outline-none"
           />
           <button
             type="submit"
             disabled={searching}
-            className="bg-green-600 px-3 text-sm text-white hover:bg-green-700 disabled:opacity-50"
+            className="flex items-center bg-brand/20 px-3 text-brand transition-colors hover:bg-brand/30 disabled:opacity-50"
           >
-            {searching ? "…" : "🔍"}
+            {searching ? "…" : <Icon name="search" size={14} />}
           </button>
         </div>
         {searchOpen && (
-          <div className="mt-1 max-h-56 overflow-y-auto rounded-lg bg-white py-1 shadow-lg">
+          <div className="mt-1 max-h-56 overflow-y-auto rounded-lg border border-white/12 bg-panel/95 py-1 shadow-[0_16px_48px_rgba(0,0,0,0.6)] backdrop-blur-xl">
             {searchResults.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-gray-400">
+              <p className="px-3 py-2 text-xs text-dim">
                 {searching ? "Searching…" : "No places found"}
               </p>
             ) : (
@@ -533,10 +540,11 @@ export default function FarmMap({
                   key={i}
                   type="button"
                   onClick={() => goToResult(r)}
-                  className="block w-full truncate px-3 py-2 text-left text-xs text-gray-700 hover:bg-green-50"
+                  className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs text-mist transition-colors hover:bg-brand/10 hover:text-ink"
                   title={r.display_name}
                 >
-                  📍 {r.display_name}
+                  <Icon name="mapPin" size={11} className="shrink-0 text-brand" />
+                  <span className="truncate">{r.display_name}</span>
                 </button>
               ))
             )}
@@ -546,21 +554,21 @@ export default function FarmMap({
 
       {/* ── Bottom-left: drawing hints + live measurements ───────────────── */}
       {isDrawing && (
-        <div className="absolute bottom-3 left-3 z-[1000] max-w-md rounded-lg bg-white/95 px-3 py-2 text-xs text-gray-700 shadow backdrop-blur">
+        <div className="absolute bottom-3 left-3 z-[1000] max-w-md rounded-lg border border-white/12 bg-panel/90 px-3 py-2 text-xs text-mist shadow-lg backdrop-blur">
           <p>
             Click the map to add boundary points — draw over the satellite
             imagery of your field.{" "}
-            <span className="text-gray-400">
+            <span className="text-dim">
               Z = undo · Enter = finish · Esc = cancel
             </span>
           </p>
           {drawnPoints.length > 0 && (
             <p className="mt-1 flex items-center gap-2">
-              <span className="rounded bg-green-100 px-1.5 py-0.5 font-semibold text-green-700">
+              <span className="rounded bg-brand/15 px-1.5 py-0.5 font-semibold text-brand">
                 {drawnPoints.length} point{drawnPoints.length === 1 ? "" : "s"}
               </span>
               {drawnPoints.length >= 3 && (
-                <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700">
+                <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 font-semibold text-emerald-300">
                   ≈ {liveArea.toLocaleString()} acres ({(liveArea * 0.404686).toFixed(1)} ha)
                 </span>
               )}
@@ -571,19 +579,20 @@ export default function FarmMap({
 
       {/* ── Unsaved polygon chip (after finish, before save) ──────────────── */}
       {!isDrawing && drawnPoints.length > 0 && canDraw && (
-        <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2 rounded-lg bg-white/95 px-3 py-2 text-xs shadow backdrop-blur">
-          <span className="font-medium text-green-700">
-            ✓ Polygon ready — fill the form to save
+        <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2 rounded-lg border border-white/12 bg-panel/90 px-3 py-2 text-xs shadow-lg backdrop-blur">
+          <span className="flex items-center gap-1 font-medium text-emerald-300">
+            <Icon name="check" size={12} strokeWidth={2.5} />
+            Polygon ready — fill the form to save
           </span>
-          <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700">
+          <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 font-semibold text-emerald-300">
             {liveArea.toLocaleString()} acres
           </span>
           <button
             onClick={cancelDrawing}
-            className="text-gray-400 hover:text-red-500"
+            className="flex items-center gap-1 text-dim transition-colors hover:text-red-400"
             title="Discard polygon"
           >
-            ✕ Discard
+            <Icon name="x" size={11} /> Discard
           </button>
         </div>
       )}

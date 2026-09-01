@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Farm } from "@/lib/api";
+import Icon from "@/components/Icon";
 
 interface FarmSelectorProps {
   farms: Farm[];
@@ -60,10 +61,10 @@ export default function FarmSelector({ farms, selected, onSelect }: FarmSelector
     <div ref={rootRef} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex min-w-[190px] items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm hover:border-green-400"
+        className="flex min-w-[190px] items-center gap-2 rounded-lg border border-white/12 bg-white/6 px-3 py-1.5 text-sm transition-colors hover:border-brand/40"
       >
-        <span className="text-base leading-none">🌾</span>
-        <span className="flex-1 truncate text-left font-medium text-gray-800">
+        <Icon name="wheat" size={14} className="shrink-0 text-brand" />
+        <span className="flex-1 truncate text-left font-medium text-ink">
           {selected ? selected.name : "Select a farm"}
         </span>
         {selected && (
@@ -82,30 +83,34 @@ export default function FarmSelector({ farms, selected, onSelect }: FarmSelector
                 setOpen(false);
               }
             }}
-            className="cursor-pointer px-1 text-xs text-gray-400 hover:text-red-500"
+            className="cursor-pointer px-1 text-dim hover:text-red-400"
             title="Clear selection"
           >
-            ✕
+            <Icon name="x" size={12} />
           </span>
         )}
-        <span className={`text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+        <Icon
+          name="chevronDown"
+          size={14}
+          className={`text-dim transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-1 w-80 rounded-xl border border-gray-200 bg-white shadow-lg">
-          <div className="border-b border-gray-100 p-2">
+        <div className="absolute right-0 z-50 mt-1 w-80 rounded-xl border border-white/12 bg-panel/95 shadow-[0_16px_48px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+          <div className="border-b border-white/8 p-2">
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name or district…"
-              className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none"
+              className="input-dark"
             />
           </div>
 
           <div className="max-h-72 overflow-y-auto p-1">
             {grouped.length === 0 && (
-              <p className="px-3 py-4 text-center text-xs text-gray-400">
+              <p className="px-3 py-4 text-center text-xs text-dim">
                 {farms.length === 0
                   ? "No farms yet — draw one on the map"
                   : "No farms match your search"}
@@ -113,8 +118,9 @@ export default function FarmSelector({ farms, selected, onSelect }: FarmSelector
             )}
             {grouped.map(([district, list]) => (
               <div key={district} className="mb-1">
-                <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                  📍 {district} · {list.length}
+                <p className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-dim">
+                  <Icon name="mapPin" size={10} />
+                  {district} · {list.length}
                 </p>
                 {list.map((f) => {
                   const active = selected?.id === f.id;
@@ -127,24 +133,24 @@ export default function FarmSelector({ farms, selected, onSelect }: FarmSelector
                         setQuery("");
                       }}
                       className={`w-full rounded-lg px-2 py-2 text-left transition-colors ${
-                        active ? "bg-green-50" : "hover:bg-gray-50"
+                        active ? "bg-brand/12" : "hover:bg-white/6"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span
                           className={`truncate text-sm font-medium ${
-                            active ? "text-green-700" : "text-gray-800"
+                            active ? "text-brand" : "text-ink"
                           }`}
                         >
                           {f.name}
                         </span>
                         {f.area_acres != null && (
-                          <span className="whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
+                          <span className="whitespace-nowrap rounded-md border border-white/10 bg-white/6 px-1.5 py-0.5 text-[10px] font-semibold text-mist">
                             {f.area_acres} ac
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 text-[10px] text-gray-400">
+                      <p className="mt-0.5 font-mono text-[10px] text-dim">
                         {f.latitude != null && f.longitude != null
                           ? `${f.latitude.toFixed(4)}, ${f.longitude.toFixed(4)}`
                           : f.province}
@@ -156,7 +162,7 @@ export default function FarmSelector({ farms, selected, onSelect }: FarmSelector
             ))}
           </div>
 
-          <div className="border-t border-gray-100 px-3 py-1.5 text-[10px] text-gray-400">
+          <div className="border-t border-white/8 px-3 py-1.5 text-[10px] text-dim">
             {farms.length} farm{farms.length === 1 ? "" : "s"} · grouped by district
           </div>
         </div>

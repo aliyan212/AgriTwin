@@ -11,18 +11,27 @@ import {
   YAxis,
 } from "recharts";
 import type { ScoreSnapshot } from "@/lib/api";
+import Icon from "@/components/Icon";
+
+const TOOLTIP_STYLE = {
+  fontSize: 12,
+  borderRadius: 10,
+  background: "rgba(11,18,16,0.95)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  color: "#ecf5ef",
+};
 
 interface ScoreTrendChartProps {
   snapshots: ScoreSnapshot[];
 }
 
 const SERIES = [
-  { key: "overall", label: "Overall", color: "#16a34a", width: 3 },
-  { key: "vegetation", label: "Vegetation", color: "#84cc16", width: 1.5 },
-  { key: "water", label: "Water", color: "#0ea5e9", width: 1.5 },
-  { key: "weather", label: "Weather", color: "#f59e0b", width: 1.5 },
-  { key: "pest_risk", label: "Pest Risk", color: "#ef4444", width: 1.5 },
-  { key: "climate", label: "Climate", color: "#a855f7", width: 1.5 },
+  { key: "overall", label: "Overall", color: "#34d399", width: 3 },
+  { key: "vegetation", label: "Vegetation", color: "#a3e635", width: 1.5 },
+  { key: "water", label: "Water", color: "#38bdf8", width: 1.5 },
+  { key: "weather", label: "Weather", color: "#fbbf24", width: 1.5 },
+  { key: "pest_risk", label: "Pest Risk", color: "#f87171", width: 1.5 },
+  { key: "climate", label: "Climate", color: "#c084fc", width: 1.5 },
 ];
 
 function parseTs(ts: string | null): Date | null {
@@ -39,10 +48,11 @@ function axisLabel(ts: string | null): string {
 export default function ScoreTrendChart({ snapshots }: ScoreTrendChartProps) {
   const header = (
     <div className="mb-4">
-      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+      <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-mist">
+        <Icon name="activity" size={13} className="text-emerald-400" />
         Health Score Trend
       </h3>
-      <p className="text-[10px] text-gray-400 mt-0.5">
+      <p className="mt-0.5 text-[10px] text-dim">
         Snapshot recorded on every intelligence refresh (deduplicated hourly)
       </p>
     </div>
@@ -50,9 +60,9 @@ export default function ScoreTrendChart({ snapshots }: ScoreTrendChartProps) {
 
   if (snapshots.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="glass-panel p-5">
         {header}
-        <p className="text-sm text-gray-400 py-8 text-center">
+        <p className="py-8 text-center text-sm text-dim">
           No score snapshots yet — open the farm dashboard to record the first one.
         </p>
       </div>
@@ -74,25 +84,26 @@ export default function ScoreTrendChart({ snapshots }: ScoreTrendChartProps) {
   });
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="glass-panel p-5">
       {header}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 10, fill: "#9db4a7" }}
               interval="preserveStartEnd"
+              stroke="rgba(255,255,255,0.15)"
             />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9db4a7" }} stroke="rgba(255,255,255,0.15)" />
             <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8 }}
+              contentStyle={TOOLTIP_STYLE}
               labelFormatter={(_, payload) =>
                 payload?.length ? (payload[0].payload as { time: string }).time : ""
               }
             />
-            <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
+            <Legend wrapperStyle={{ fontSize: 11, color: "#9db4a7" }} iconSize={8} />
             {SERIES.map((s) => (
               <Line
                 key={s.key}
@@ -101,7 +112,7 @@ export default function ScoreTrendChart({ snapshots }: ScoreTrendChartProps) {
                 name={s.label}
                 stroke={s.color}
                 strokeWidth={s.width}
-                dot={{ r: 2, fill: s.color }}
+                dot={{ r: 2, fill: s.color, stroke: "none" }}
                 activeDot={{ r: 4 }}
                 connectNulls
               />

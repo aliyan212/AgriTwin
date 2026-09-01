@@ -11,6 +11,15 @@ import {
   YAxis,
 } from "recharts";
 import type { FarmIntelligence } from "@/lib/api";
+import Icon from "@/components/Icon";
+
+const TOOLTIP_STYLE = {
+  fontSize: 12,
+  borderRadius: 10,
+  background: "rgba(11,18,16,0.95)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  color: "#ecf5ef",
+};
 
 type MlMeta = NonNullable<FarmIntelligence["ml"]>;
 
@@ -33,17 +42,18 @@ function dayLabel(dateStr: string): string {
 
 export default function ScoreForecastChart({ forecast, currentScore, ml }: ScoreForecastChartProps) {
   const header = (
-    <div className="flex items-center justify-between mb-4">
+    <div className="mb-4 flex items-center justify-between">
       <div>
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-mist">
+          <Icon name="bot" size={13} className="text-violet-400" />
           7-Day Health Score Forecast
         </h3>
-        <p className="text-[10px] text-gray-400 mt-0.5">
+        <p className="mt-0.5 text-[10px] text-dim">
           Predicted by a random forest trained on this farm&rsquo;s own recorded observations
         </p>
       </div>
       {ml && (
-        <span className="rounded bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+        <span className="rounded-md border border-violet-400/25 bg-violet-400/10 px-2 py-0.5 text-[10px] font-medium text-violet-300">
           Local ML
         </span>
       )}
@@ -52,9 +62,9 @@ export default function ScoreForecastChart({ forecast, currentScore, ml }: Score
 
   if (!forecast || forecast.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="glass-panel p-5">
         {header}
-        <p className="text-sm text-gray-400 py-8 text-center">
+        <p className="py-8 text-center text-sm text-dim">
           The local ML model needs a few more farm observations before it can forecast —
           keep refreshing the dashboard to accumulate training data.
         </p>
@@ -77,7 +87,7 @@ export default function ScoreForecastChart({ forecast, currentScore, ml }: Score
       : delta > 0
         ? `trending up to ${last} (+${delta} by ${dayLabel(data[data.length - 1].date)})`
         : `trending down to ${last} (${delta} by ${dayLabel(data[data.length - 1].date)})`;
-  const deltaColor = delta > 0 ? "text-green-600" : delta < 0 ? "text-red-600" : "text-gray-500";
+  const deltaColor = delta > 0 ? "text-emerald-400" : delta < 0 ? "text-red-400" : "text-mist";
 
   const trainedOn = ml ? (trainedOnLabels[ml.trained_on] ?? ml.trained_on) : null;
   const trainedAt = ml?.trained_at
@@ -88,16 +98,16 @@ export default function ScoreForecastChart({ forecast, currentScore, ml }: Score
     : null;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="glass-panel p-5">
       {header}
 
       {/* Latest predicted value row */}
       <div className="mb-3 flex items-baseline gap-3">
-        <span className="text-3xl font-bold text-gray-900">{data[data.length - 1].predicted_score}</span>
-        <span className="text-xs text-gray-400">
+        <span className="text-3xl font-bold tabular-nums text-ink">{data[data.length - 1].predicted_score}</span>
+        <span className="text-xs text-dim">
           predicted score by {dayLabel(data[data.length - 1].date)}
         </span>
-        <span className={`text-xs font-medium ${deltaColor} ml-auto`}>{deltaLabel}</span>
+        <span className={`ml-auto text-xs font-medium ${deltaColor}`}>{deltaLabel}</span>
       </div>
 
       <div className="h-56">
@@ -105,15 +115,20 @@ export default function ScoreForecastChart({ forecast, currentScore, ml }: Score
           <AreaChart data={data} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
             <defs>
               <linearGradient id="forecastFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 10, fill: "#9db4a7" }}
+              interval="preserveStartEnd"
+              stroke="rgba(255,255,255,0.15)"
+            />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9db4a7" }} stroke="rgba(255,255,255,0.15)" />
             <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8 }}
+              contentStyle={TOOLTIP_STYLE}
               formatter={(value) => [Number(value), "Predicted score"]}
               labelFormatter={(label, payload) => {
                 const point = payload?.[0]?.payload as { date: string } | undefined;
@@ -123,26 +138,26 @@ export default function ScoreForecastChart({ forecast, currentScore, ml }: Score
             {currentScore != null && (
               <ReferenceLine
                 y={currentScore}
-                stroke="#16a34a"
+                stroke="#34d399"
                 strokeDasharray="4 4"
                 strokeWidth={1}
                 label={{
                   value: `now ${currentScore}`,
                   position: "insideBottomLeft",
                   fontSize: 10,
-                  fill: "#16a34a",
+                  fill: "#34d399",
                 }}
               />
             )}
             <Area
               type="monotone"
               dataKey="predicted_score"
-              stroke="#6366f1"
+              stroke="#a78bfa"
               strokeWidth={2.5}
               strokeDasharray="6 3"
               fill="url(#forecastFill)"
-              dot={{ r: 3, fill: "#6366f1" }}
-              activeDot={{ r: 5 }}
+              dot={{ r: 3, fill: "#a78bfa", stroke: "none" }}
+              activeDot={{ r: 5, fill: "#c4b5fd" }}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -150,13 +165,13 @@ export default function ScoreForecastChart({ forecast, currentScore, ml }: Score
 
       {/* Training transparency footer */}
       {ml && (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-2">
-          <p className="text-[10px] text-gray-400">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-white/6 pt-2">
+          <p className="text-[10px] text-dim">
             Trained on {ml.samples} local observations ({ml.observed_samples} real snapshots,{" "}
             {trainedOn}) · fit R² {ml.fit_r2}
             {trainedAt ? ` · retrained ${trainedAt}` : ""}
           </p>
-          <p className="text-[10px] text-violet-500">┄ dashed = ML projection</p>
+          <p className="text-[10px] text-violet-400/80">┄ dashed = ML projection</p>
         </div>
       )}
     </div>

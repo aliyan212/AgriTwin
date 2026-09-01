@@ -14,15 +14,16 @@ import ScoreForecastChart from "@/components/ScoreForecastChart";
 import AlertsPanel from "@/components/AlertsPanel";
 import RecommendationPanel from "@/components/RecommendationPanel";
 import DataProvenance from "@/components/DataProvenance";
+import Icon from "@/components/Icon";
 
 const FarmMap = dynamic(() => import("@/components/FarmMap"), { ssr: false });
 
 const statusColors: Record<string, string> = {
-  excellent: "text-emerald-700 bg-emerald-100",
-  good: "text-green-700 bg-green-100",
-  moderate: "text-amber-700 bg-amber-100",
-  poor: "text-orange-700 bg-orange-100",
-  critical: "text-red-700 bg-red-100",
+  excellent: "text-emerald-300 bg-emerald-500/15 ring-1 ring-emerald-400/30",
+  good: "text-green-300 bg-green-500/15 ring-1 ring-green-400/30",
+  moderate: "text-amber-300 bg-amber-500/15 ring-1 ring-amber-400/30",
+  poor: "text-orange-300 bg-orange-500/15 ring-1 ring-orange-400/30",
+  critical: "text-red-300 bg-red-500/15 ring-1 ring-red-400/30",
 };
 
 export default function FarmDetailPage() {
@@ -54,10 +55,10 @@ export default function FarmDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-green-500 border-t-transparent mx-auto mb-4" />
-          <p className="text-sm text-gray-500">Loading farm intelligence...</p>
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+          <p className="text-sm text-mist">Loading farm intelligence...</p>
         </div>
       </div>
     );
@@ -66,15 +67,16 @@ export default function FarmDetailPage() {
   if (error || !intel) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-6">
-        <Link href="/" className="text-sm text-green-600 hover:underline mb-4 inline-block">
-          &larr; Back to Dashboard
+        <Link href="/" className="mb-4 inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-light hover:underline">
+          <Icon name="arrowLeft" size={14} />
+          Back to Dashboard
         </Link>
-        <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
-          <p className="text-red-700 font-medium">Failed to load farm intelligence</p>
-          <p className="text-sm text-red-600 mt-1">{error}</p>
+        <div className="glass-panel border-red-400/25 bg-red-500/5 p-8 text-center">
+          <p className="font-medium text-red-300">Failed to load farm intelligence</p>
+          <p className="mt-1 text-sm text-red-400/80">{error}</p>
           <button
             onClick={fetchIntel}
-            className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+            className="mt-4 rounded-lg bg-red-500/20 px-4 py-2 text-sm text-red-200 ring-1 ring-red-400/30 transition-colors hover:bg-red-500/30"
           >
             Retry
           </button>
@@ -107,11 +109,13 @@ export default function FarmDetailPage() {
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/" className="text-sm text-green-600 hover:underline mb-1 inline-block">
-            &larr; Back to Dashboard
+          <Link href="/" className="mb-1 inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-light hover:underline">
+            <Icon name="arrowLeft" size={14} />
+            Back to Dashboard
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">{intel.farm.name}</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-bold tracking-tight text-ink">{intel.farm.name}</h1>
+          <p className="flex items-center gap-1 text-sm text-mist">
+            <Icon name="mapPin" size={12} className="text-dim" />
             {intel.farm.district}, {intel.farm.province}
             {intel.farm.area_acres ? ` — ${intel.farm.area_acres} acres` : ""}
           </p>
@@ -119,15 +123,16 @@ export default function FarmDetailPage() {
         <div className="flex items-center gap-3">
           <span
             className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${
-              statusColors[intel.score.status] ?? "bg-gray-100 text-gray-700"
+              statusColors[intel.score.status] ?? "bg-white/8 text-mist"
             }`}
           >
             {intel.score.status} — {intel.score.value}/100
           </span>
           <Link
             href={`/farms/${farmId}/history`}
-            className="rounded-lg border border-green-200 bg-green-50 px-4 py-1.5 text-sm font-medium text-green-700 hover:bg-green-100"
+            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/4 px-4 py-1.5 text-sm font-medium text-mist transition-colors hover:border-emerald-400/30 hover:text-emerald-300"
           >
+            <Icon name="clock" size={14} />
             View History
           </Link>
           <button
@@ -136,8 +141,9 @@ export default function FarmDetailPage() {
               fetchIntel();
             }}
             disabled={refreshing}
-            className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-400 px-4 py-1.5 text-sm font-medium text-abyss transition-all hover:from-emerald-400 hover:to-emerald-300 disabled:opacity-50"
           >
+            <Icon name="refresh" size={14} className={refreshing ? "animate-spin" : ""} />
             {refreshing ? "Refreshing..." : "Refresh"}
           </button>
         </div>
@@ -146,8 +152,8 @@ export default function FarmDetailPage() {
       {/* ── Alerts Section ────────────────────────────────────────────────── */}
       {intel.alerts.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+          <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-mist">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
             Active Alerts ({intel.alerts.filter((a) => a.severity !== "info").length})
           </h2>
           <AlertsPanel alerts={intel.alerts} />
@@ -156,7 +162,7 @@ export default function FarmDetailPage() {
 
       {/* ── Top Row: Map + Score + Crop Info ──────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 h-[400px] rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="h-[400px] overflow-hidden rounded-2xl border border-white/10 shadow-[0_12px_32px_rgb(0_0_0/0.35)] lg:col-span-2">
           <FarmMap
             center={[intel.farm.latitude, intel.farm.longitude]}
             zoom={14}
@@ -175,31 +181,32 @@ export default function FarmDetailPage() {
 
           {/* Crop Info */}
           {intel.crop && (
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+            <div className="glass-panel p-5">
+              <h3 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-mist">
+                <Icon name="wheat" size={13} className="text-lime-400" />
                 Current Crop
               </h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Crop</span>
-                  <span className="font-medium text-gray-900">{intel.crop.name}</span>
+                  <span className="text-mist">Crop</span>
+                  <span className="font-medium text-ink">{intel.crop.name}</span>
                 </div>
                 {intel.crop.season && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Season</span>
-                    <span className="font-medium text-gray-900">{intel.crop.season}</span>
+                    <span className="text-mist">Season</span>
+                    <span className="font-medium text-ink">{intel.crop.season}</span>
                   </div>
                 )}
                 {intel.crop.growth_stage && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Growth Stage</span>
-                    <span className="font-medium text-gray-900">{intel.crop.growth_stage}</span>
+                    <span className="text-mist">Growth Stage</span>
+                    <span className="font-medium text-ink">{intel.crop.growth_stage}</span>
                   </div>
                 )}
                 {intel.crop.sowing_date && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Sowing Date</span>
-                    <span className="font-medium text-gray-900">
+                    <span className="text-mist">Sowing Date</span>
+                    <span className="font-medium text-ink">
                       {new Date(intel.crop.sowing_date).toLocaleDateString("en-PK")}
                     </span>
                   </div>
@@ -241,7 +248,10 @@ export default function FarmDetailPage() {
 
       {/* ── AI Recommendation ─────────────────────────────────────────────── */}
       <div className="mt-6">
-        <h2 className="text-sm font-semibold text-gray-600 mb-3">AI Recommendation</h2>
+        <h2 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-mist">
+          <Icon name="spark" size={13} className="text-brand" />
+          AI Recommendation
+        </h2>
         <RecommendationPanel
           recommendation={{
             recommendation: intel.recommendation.text,
