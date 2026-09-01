@@ -126,6 +126,8 @@ async def get_recommendation(farm_id: int, db: Session = Depends(get_db)):
         "farm_id": farm_id,
         "recommendation": rec.text,
         "reasoning": rec.reasoning,
+        "text_ur": rec.text_ur,
+        "reasoning_ur": rec.reasoning_ur,
         "confidence": rec.confidence,
         "risk_level": rec.risk_level,
         "data_summary": rec.data_summary,

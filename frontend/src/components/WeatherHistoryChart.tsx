@@ -14,33 +14,58 @@ import {
 import type { WeatherObservation } from "@/lib/api";
 import Icon from "@/components/Icon";
 
-const TOOLTIP_STYLE = {
-  fontSize: 12,
-  borderRadius: 10,
-  background: "rgba(11,18,16,0.95)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  color: "#ecf5ef",
-};
-
 interface WeatherHistoryChartProps {
   observations: WeatherObservation[];
 }
 
 function parseTs(ts: string | null): Date | null {
   if (!ts) return null;
-  return new Date(ts.endsWith("Z") ? ts : `${ts}Z`); // server stores UTC without suffix
+  return new Date(ts.endsWith("Z") ? ts : `${ts}Z`);
 }
+
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { time: string } }> }) => {
+  if (active && payload && payload.length) {
+    const time = payload[0]?.payload?.time || "";
+    return (
+      <div className="rounded-xl border border-ink/12 bg-panel/95 p-3 shadow-2xl backdrop-blur-xl text-xs font-mono">
+        <p className="text-dim text-[10px] mb-1.5 pb-1 border-b border-ink/8">{time}</p>
+        <div className="space-y-1">
+          {payload.map((entry) => (
+            <div key={entry.name} className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-1 text-mist">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                {entry.name}:
+              </span>
+              <span className="font-bold text-ink tabular-nums">
+                {entry.name.includes("Temp")
+                  ? `${entry.value}°C`
+                  : entry.name.includes("Rain")
+                    ? `${entry.value} mm`
+                    : `${entry.value}%`}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function WeatherHistoryChart({ observations }: WeatherHistoryChartProps) {
   const header = (
-    <div className="mb-4">
-      <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-mist">
-        <Icon name="cloudSun" size={13} className="text-sky-400" />
-        Weather Observations
-      </h3>
-      <p className="mt-0.5 text-[10px] text-dim">
-        Ground conditions captured on each intelligence refresh · Open-Meteo
-      </p>
+    <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-500/15 text-sky-400 ring-1 ring-sky-400/30">
+          <Icon name="cloudSun" size={14} />
+        </span>
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-mist">
+          Weather Observations History
+        </h3>
+      </div>
+      <span className="hud-pill text-sky-300 border-sky-400/25 bg-sky-500/10">
+        Open-Meteo Logs
+      </span>
     </div>
   );
 
@@ -48,9 +73,12 @@ export default function WeatherHistoryChart({ observations }: WeatherHistoryChar
     return (
       <div className="glass-panel p-5">
         {header}
-        <p className="py-8 text-center text-sm text-dim">
-          No weather observations recorded yet.
-        </p>
+        <div className="rounded-xl border border-ink/6 bg-ink/[0.02] p-8 text-center">
+          <Icon name="cloudSun" size={24} className="mx-auto text-dim mb-2" />
+          <p className="text-xs text-dim">
+            No meteorological observations logged yet.
+          </p>
+        </div>
       </div>
     );
   }
@@ -71,33 +99,41 @@ export default function WeatherHistoryChart({ observations }: WeatherHistoryChar
   });
 
   return (
-    <div className="glass-panel p-5">
+    <div className="glass-panel p-5 relative overflow-hidden">
       {header}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 5, right: 0, left: -18, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <ComposedChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 10, fill: "#9db4a7" }}
-              interval="preserveStartEnd"
-              stroke="rgba(255,255,255,0.15)"
+              tick={{ fontSize: 10, fill: "#9db4a7", fontFamily: "var(--font-mono)" }}
+              stroke="rgba(255,255,255,0.1)"
             />
-            <YAxis yAxisId="left" domain={[0, 100]} tick={{ fontSize: 11, fill: "#9db4a7" }} stroke="rgba(255,255,255,0.15)" />
-            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#9db4a7" }} stroke="rgba(255,255,255,0.15)" />
-            <Tooltip
-              contentStyle={TOOLTIP_STYLE}
-              labelFormatter={(_, payload) =>
-                payload?.length ? (payload[0].payload as { time: string }).time : ""
-              }
+            <YAxis
+              yAxisId="left"
+              domain={[0, 100]}
+              tick={{ fontSize: 10, fill: "#9db4a7", fontFamily: "var(--font-mono)" }}
+              stroke="rgba(255,255,255,0.1)"
             />
-            <Legend wrapperStyle={{ fontSize: 11, color: "#9db4a7" }} iconSize={8} />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={{ fontSize: 10, fill: "#9db4a7", fontFamily: "var(--font-mono)" }}
+              stroke="rgba(255,255,255,0.1)"
+              unit="m"
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend
+              wrapperStyle={{ fontSize: 11, fontFamily: "var(--font-mono)", paddingTop: 8 }}
+              iconSize={8}
+            />
             <Bar
               yAxisId="right"
               dataKey="rainfall_mm"
               name="Rain (mm)"
-              fill="rgba(56,189,248,0.35)"
-              radius={[2, 2, 0, 0]}
+              fill="rgba(56,189,248,0.4)"
+              radius={[3, 3, 0, 0]}
             />
             <Line
               yAxisId="left"

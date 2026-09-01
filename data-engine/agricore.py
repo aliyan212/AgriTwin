@@ -73,6 +73,8 @@ class Recommendation:
     confidence: float
     risk_level: str  # low / moderate / high / critical
     data_summary: dict
+    text_ur: str | None = None
+    reasoning_ur: str | None = None
 
 
 # ── Scoring engine ────────────────────────────────────────────────────────────
@@ -98,64 +100,80 @@ def compute_health_score(ctx: FarmContext) -> FarmHealthScore:
     water_score = 70  # baseline
     if ctx.soil_moisture_m3m3 is not None:
         if ctx.soil_moisture_m3m3 < 0.15:
-            water_score -= 30
+            water_score -= 35
         elif ctx.soil_moisture_m3m3 < 0.25:
             water_score -= 15
         elif ctx.soil_moisture_m3m3 > 0.45:
-            water_score -= 10  # waterlogging risk
-    if ctx.et0_mm is not None and ctx.et0_mm > 6:
-        water_score -= 15
-    if ctx.rainfall_mm is not None and ctx.rainfall_mm < 1 and ctx.et0_mm and ctx.et0_mm > 4:
-        water_score -= 10
+            water_score -= 20  # waterlogging risk
+
+    if ctx.rainfall_mm is not None and ctx.rainfall_mm > 20:
+        water_score = min(100, water_score + 15)
+
+    if ctx.et0_mm is not None and ctx.et0_mm > 6.0:
+        water_score = max(0, water_score - 15)  # high atmospheric water demand
+
     score.water = max(0, min(100, water_score))
 
-    # ── Weather (temperature + extreme events) ────────────────────────────────
+    # ── Weather (temperature + humidity + wind extremes) ──────────────────────
     weather_score = 80
     if ctx.temperature_c is not None:
-        crop_info = get_crop_info(ctx.crop_name) if ctx.crop_name else None
-        if crop_info:
-            opt = crop_info["optimal_temperature_c"]
-            if ctx.temperature_c > opt["critical_high"]:
-                weather_score -= 30
-            elif ctx.temperature_c > opt["max"]:
-                weather_score -= 15
-            elif ctx.temperature_c < opt["min"]:
-                weather_score -= 15
-    if ctx.wind_speed_kmh is not None and ctx.wind_speed_kmh > 40:
-        weather_score -= 20
+        if ctx.temperature_c > 42:
+            weather_score -= 40  # extreme heat stress
+        elif ctx.temperature_c > 38:
+            weather_score -= 20
+        elif ctx.temperature_c < 4:
+            weather_score -= 30  # frost risk
+
+    if ctx.wind_speed_kmh is not None and ctx.wind_speed_kmh > 45:
+        weather_score -= 25  # lodging risk / spray drift
+
+    if ctx.humidity_pct is not None and ctx.humidity_pct > 85:
+        weather_score -= 10  # fungal disease risk
+
     score.weather = max(0, min(100, weather_score))
 
-    # ── Pest risk ─────────────────────────────────────────────────────────────
+    # ── Pest Risk (temp + humidity interaction) ───────────────────────────────
     pest_score = 80
-    if ctx.regional_pest_alert:
-        pest_score -= 30
-    # Warm + humid conditions increase pest risk
     if ctx.temperature_c and ctx.humidity_pct:
-        if ctx.temperature_c > 28 and ctx.humidity_pct > 70:
-            pest_score -= 15
+        # Warm + humid = pest-friendly (e.g., whitefly, aphids, bollworm in Punjab)
+        if 26 <= ctx.temperature_c <= 35 and ctx.humidity_pct > 65:
+            pest_score -= 35
+        elif 22 <= ctx.temperature_c <= 38 and ctx.humidity_pct > 55:
+            pest_score -= 20
+
+    if ctx.regional_pest_alert:
+        pest_score -= 25
+
     score.pest_risk = max(0, min(100, pest_score))
 
-    # ── Climate (historical trend deviation from NASA POWER) ──────────────────
-    climate_score = 75  # baseline
+    # ── Climate Anomaly (departure from historical baseline) ───────────────────
+    climate_score = 80
     if ctx.temp_anomaly_c is not None:
-        anomaly = ctx.temp_anomaly_c
-        if abs(anomaly) <= 1.0:
-            climate_score = 95  # near normal
-        elif abs(anomaly) <= 2.0:
-            climate_score = 80  # mild deviation
-        elif abs(anomaly) <= 3.5:
-            climate_score = 60  # moderate deviation
-        elif abs(anomaly) <= 5.0:
-            climate_score = 40  # significant deviation
-        else:
-            climate_score = 20  # extreme anomaly
-        # Extra penalty for extreme heat anomaly
-        if anomaly > 4.0:
+        anomaly = abs(ctx.temp_anomaly_c)
+        if anomaly >= 5.0:
+            climate_score -= 45
+        elif anomaly >= 3.0:
+            climate_score -= 25
+        elif anomaly >= 1.5:
             climate_score -= 10
+
+    if ctx.humidity_anomaly_pct is not None:
+        h_anomaly = abs(ctx.humidity_anomaly_pct)
+        if h_anomaly >= 25.0:
+            climate_score -= 25
+        elif h_anomaly >= 15.0:
+            climate_score -= 10
+
     score.climate = max(0, min(100, climate_score))
 
-    # ── Overall ───────────────────────────────────────────────────────────────
-    weights = {"vegetation": 0.25, "water": 0.25, "weather": 0.20, "pest_risk": 0.15, "climate": 0.15}
+    # ── Overall composite (weighted average) ──────────────────────────────────
+    weights = {
+        "vegetation": 0.25,
+        "water": 0.25,
+        "weather": 0.20,
+        "pest_risk": 0.15,
+        "climate": 0.15,
+    }
     score.overall = int(
         score.vegetation * weights["vegetation"]
         + score.water * weights["water"]
@@ -163,41 +181,16 @@ def compute_health_score(ctx: FarmContext) -> FarmHealthScore:
         + score.pest_risk * weights["pest_risk"]
         + score.climate * weights["climate"]
     )
-
     return score
 
 
-# ── AI recommendation engine ──────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are AgriTwin AI, an agricultural decision-support assistant
-for farmers in Punjab, Pakistan. You analyze real farm data — weather, satellite
-imagery (NDVI), soil moisture, crop stage, and regional pest alerts — and provide
-actionable recommendations.
-
-RULES:
-1. Never invent measurements. Only use the data provided.
-2. If data is insufficient, explicitly state that.
-3. Always provide: recommendation, reasoning, confidence (0–1), risk_level, and
-   any uncertainties.
-4. Recommendations must be actionable (e.g. "Consider irrigation within 24–48 hours").
-5. Use simple language understandable by a farmer.
-6. When grounding data from the farm's own recorded history is provided, cite its
-   concrete numbers (dates, scores, °C, mm, forecasts) so the advice is
-   verifiable and farm-specific.
-"""
-
-
+# ── AI Recommendation Engine (Gemini) ─────────────────────────────────────────
 async def generate_recommendation(
-    ctx: FarmContext, health: FarmHealthScore, grounding: str | None = None
+    ctx: FarmContext,
+    health: FarmHealthScore,
+    grounding: str | None = None,
 ) -> Recommendation:
-    """Use Gemini (google-genai SDK) to generate a data-grounded recommendation.
-
-    `grounding` carries the farm's own recorded history (past observations,
-    alerts, previous advice, and the local ML score forecast) so the
-    recommendation is authentic and farm-specific.
-
-    Falls back to the rule-based engine when no API key is configured or the
-    SDK is unavailable.
-    """
+    """Generate agronomic recommendations via Gemini (bilingual English + Punjabi-flavored Urdu), or fallback to rule-based."""
     api_key = os.getenv("GEMINI_API_KEY", "")
     if not api_key:
         return _rule_based_recommendation(ctx, health)
@@ -220,7 +213,8 @@ async def generate_recommendation(
             f"{grounding}\n\n"
         )
 
-    prompt = f"""Analyze the following farm data and provide a recommendation.
+    prompt = f"""You are AgriTwin AI, an expert precision agronomy advisor for farmers in Punjab, Pakistan.
+Analyze the following farm telemetry and provide concise, actionable recommendations in BOTH English AND simple, friendly Pakistani Urdu (using colloquial Punjab farming terminology understandable by local farmers, e.g. آبپاشی/پانی, کھاد/یوریا, سنڈی/تیلہ, گندم/دھان/کپاس/کماد).
 
 Farm Context:
 - Crop: {ctx.crop_name or 'Unknown'}
@@ -247,8 +241,10 @@ Farm Context:
 
 Respond in this exact JSON format:
 {{
-  "recommendation": "<actionable recommendation>",
-  "reasoning": "<explain why based on the data>",
+  "recommendation": "<concise actionable recommendation in English>",
+  "reasoning": "<concise explanation why based on telemetry in English>",
+  "recommendation_ur": "<آسان اور عام فہم اردو / پنجابی زرعی زبان میں کسان کے لیے ٹھوس عملی مشورہ>",
+  "reasoning_ur": "<موسم، نمی اور فصل کے مطابق آسان اردو میں وجہ>",
   "confidence": <0.0 to 1.0>,
   "risk_level": "<low|moderate|high|critical>"
 }}
@@ -273,6 +269,8 @@ Respond in this exact JSON format:
         result = {
             "recommendation": response.text,
             "reasoning": "AI response could not be parsed as JSON.",
+            "recommendation_ur": response.text,
+            "reasoning_ur": "اے آئی جواب مکمل طور پر موصول نہیں ہوا۔",
             "confidence": 0.5,
             "risk_level": "moderate",
         }
@@ -280,6 +278,8 @@ Respond in this exact JSON format:
     return Recommendation(
         text=result.get("recommendation", ""),
         reasoning=result.get("reasoning", ""),
+        text_ur=result.get("recommendation_ur") or None,
+        reasoning_ur=result.get("reasoning_ur") or None,
         confidence=result.get("confidence", 0.5),
         risk_level=result.get("risk_level", "moderate"),
         data_summary=_build_data_summary(ctx, health),
@@ -287,40 +287,60 @@ Respond in this exact JSON format:
 
 
 def _rule_based_recommendation(ctx: FarmContext, health: FarmHealthScore) -> Recommendation:
-    """Simple rule-based fallback when Gemini is not available."""
+    """Simple rule-based fallback with authentic Punjab farmer Urdu translations."""
     alerts = []
+    alerts_ur = []
 
     if health.water < 50:
         alerts.append(
             "Water stress detected: soil moisture is low and no significant rainfall expected. "
             "Consider irrigation within the next 24–48 hours."
         )
+        alerts_ur.append(
+            "زمین وچ نمی دی کمی ہے تے بارش دا امکان نہیں۔ اگلے 24 توں 48 گھنٹیاں دے اندر فصل نوں پانی (آبپاشی) لاؤ۔"
+        )
     if health.weather < 50:
         alerts.append(
             "Weather alert: extreme temperature or wind conditions detected. "
             "Monitor crops closely and consider protective measures."
+        )
+        alerts_ur.append(
+            "موسمی الرٹ: تیز ہوا یا غیر معمولی گرمی دی وجہ توں فصل تے دباؤ اے۔ کھیت دی مسلسل نگرانی رکھو۔"
         )
     if health.pest_risk < 50:
         alerts.append(
             "Pest risk elevated: warm and humid conditions favor pest development. "
             "Consider scouting your fields and consulting local pest advisory services."
         )
+        alerts_ur.append(
+            "کیڑیاں (تیلہ / سنڈی) دا خطرہ: گرم تے نم موسم کیڑیاں لئی سازگار ہے۔ فورا اپنے کھیتاں دا معائنہ کرو۔"
+        )
     if health.vegetation < 50:
         alerts.append(
             "Vegetation stress: NDVI indicates declining crop health. "
             "Investigate possible causes such as water stress, nutrient deficiency, or disease."
         )
+        alerts_ur.append(
+            "فصل دی ہریالی وچ کمی: سیٹلائٹ امیجری توں پودیاں دی صحت کمزور نظر آ رہی اے۔ کھاد تے پانی دی صورتحال چیک کرو۔"
+        )
     if ctx.temp_anomaly_c is not None and abs(ctx.temp_anomaly_c) >= 2.0:
         direction = "above" if ctx.temp_anomaly_c > 0 else "below"
+        direction_ur = "زیادہ" if ctx.temp_anomaly_c > 0 else "گھٹ"
         alerts.append(
             f"Climate anomaly: current temperature is {abs(ctx.temp_anomaly_c):.1f}°C {direction} "
             f"the historical baseline ({ctx.historical_mean_temp_c:.1f}°C for the same month "
             f"last year, NASA POWER). Adjust irrigation and crop monitoring accordingly."
         )
+        alerts_ur.append(
+            f"موسمی تبدیلی: موجودہ درجہ حرارت پچھلے سال دے مقابلے وچ {abs(ctx.temp_anomaly_c):.1f}°C {direction_ur} اے۔ آبپاشی دا خاص دھیان رکھو۔"
+        )
 
     if not alerts:
         alerts.append(
             "Your farm is in good condition. Continue current practices and monitor regularly."
+        )
+        alerts_ur.append(
+            "ماشاءاللہ تہاڈی فصل دی مجموعی حالت بہترین ہے۔ موجودہ نگہداشت جاری رکھو۔"
         )
 
     risk = "critical" if health.overall < 30 else "high" if health.overall < 50 else "moderate" if health.overall < 70 else "low"
@@ -332,6 +352,8 @@ def _rule_based_recommendation(ctx: FarmContext, health: FarmHealthScore) -> Rec
             f"Based on health score {health.overall}/100, live Open-Meteo observations, "
             f"MODIS NDVI, and the NASA POWER historical baseline."
         ),
+        text_ur=" | ".join(alerts_ur),
+        reasoning_ur=f"صحت اسکور {health.overall}/100، اوپن میٹیو لائیو ڈیٹا، سیٹلائٹ این ڈی وی آئی تے ناسا پاور موسمی ریکارڈ دی بنیاد پر۔",
         confidence=confidence,
         risk_level=risk,
         data_summary=_build_data_summary(ctx, health),

@@ -50,13 +50,20 @@ def delete_farm(farm_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
+from crop_knowledge import derive_growth_stage
+
+
 # ── Crop CRUD ─────────────────────────────────────────────────────────────────
 @router.post("/{farm_id}/crops", response_model=CropResponse, status_code=201)
 def add_crop(farm_id: int, payload: CropCreate, db: Session = Depends(get_db)):
     farm = db.query(Farm).get(farm_id)
     if not farm:
         raise HTTPException(status_code=404, detail="Farm not found")
-    crop = Crop(farm_id=farm_id, **payload.model_dump())
+    data = payload.model_dump()
+    if not data.get("growth_stage") and data.get("sowing_date"):
+        stage_info = derive_growth_stage(data["crop_name"], data["sowing_date"])
+        data["growth_stage"] = stage_info["stage"]
+    crop = Crop(farm_id=farm_id, **data)
     db.add(crop)
     db.commit()
     db.refresh(crop)
@@ -65,4 +72,13 @@ def add_crop(farm_id: int, payload: CropCreate, db: Session = Depends(get_db)):
 
 @router.get("/{farm_id}/crops", response_model=list[CropResponse])
 def list_crops(farm_id: int, db: Session = Depends(get_db)):
-    return db.query(Crop).filter(Crop.farm_id == farm_id).all()
+    crops = db.query(Crop).filter(Crop.farm_id == farm_id).all()
+    # Dynamic sync of current growth stage based on elapsed days
+    for c in crops:
+        if c.sowing_date:
+            stage_info = derive_growth_stage(c.crop_name, c.sowing_date)
+            if c.growth_stage != stage_info["stage"]:
+                c.growth_stage = stage_info["stage"]
+                db.add(c)
+    db.commit()
+    return crops

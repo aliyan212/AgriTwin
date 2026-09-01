@@ -18,6 +18,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const body = await res.text().catch(() => "");
     throw new Error(`API ${res.status}: ${body || res.statusText}`);
   }
+  if (res.status === 204) {
+    return null as unknown as T;
+  }
   return res.json() as Promise<T>;
 }
 
@@ -65,6 +68,8 @@ export interface Recommendation {
   farm_id?: number;
   recommendation: string;
   reasoning: string;
+  text_ur?: string;
+  reasoning_ur?: string;
   confidence: number;
   risk_level: string;
   data_summary?: Record<string, unknown>;
@@ -176,6 +181,8 @@ export interface FarmIntelligence {
   recommendation: {
     text: string;
     reasoning: string;
+    text_ur?: string;
+    reasoning_ur?: string;
     confidence: number;
     risk_level: string;
   };

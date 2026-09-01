@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Layer, LayerGroup, LeafletMouseEvent, Map as LeafletMap } from "leaflet";
+import "leaflet/dist/leaflet.css";
 import Icon from "@/components/Icon";
 
 type LatLngTuple = [number, number];
@@ -17,8 +18,8 @@ function calculatePolygonAreaAcres(points: LatLngTuple[]): number {
   let area = 0;
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n;
-    area += points[i][1] * points[j][0]; // lng_i * lat_j
-    area -= points[j][1] * points[i][0]; // lng_j * lat_i
+    area += points[i][1] * points[j][0];
+    area -= points[j][1] * points[i][0];
   }
   area = Math.abs(area) / 2;
 
@@ -31,7 +32,7 @@ function calculatePolygonAreaAcres(points: LatLngTuple[]): number {
   return Math.round((areaM2 / 4046.86) * 10) / 10;
 }
 
-/** Best-effort district lookup from coordinates via OSM Nominatim (free, no key). */
+/** Best-effort district lookup from coordinates via OSM Nominatim. */
 async function reverseGeocodeDistrict(lat: number, lng: number): Promise<string | undefined> {
   try {
     const res = await fetch(
@@ -57,7 +58,6 @@ interface FarmMapProps {
   zoom?: number;
   polygonGeoJson?: string | null;
   farmLabel?: string | null;
-  /** Increment to clear an unsaved drawing from the map (after save/cancel). */
   resetSignal?: number;
   onPolygonDrawn?: (
     geojson: string,
@@ -68,13 +68,10 @@ interface FarmMapProps {
 }
 
 const DEFAULT_CENTER: LatLngTuple = [32.5736, 74.0782]; // Gujrat, Punjab
-const SAT_TILES =
-  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-const SAT_ATTR = "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics";
-const LABEL_TILES =
-  "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
-const OSM_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const OSM_ATTR = "&copy; OpenStreetMap contributors";
+
+// High-resolution Satellite Hybrid with built-in English & Urdu roads, canals, towns & place labels
+const GOOGLE_HYBRID = "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}";
+const GOOGLE_STREET = "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}";
 
 export default function FarmMap({
   center,
@@ -90,83 +87,125 @@ export default function FarmMap({
   const farmLayerRef = useRef<LayerGroup | null>(null);
   const previewLayerRef = useRef<LayerGroup | null>(null);
   const userLayerRef = useRef<LayerGroup | null>(null);
-  const tileRefs = useRef<{ satellite?: Layer; labels?: Layer; street?: Layer }>({});
+  const tileRefs = useRef<{ satellite?: Layer; street?: Layer }>({});
   const skipFirstCenter = useRef(true);
   const skipFirstReset = useRef(true);
 
   const [mapReady, setMapReady] = useState(false);
   const [basemap, setBasemap] = useState<"satellite" | "street">("satellite");
   const [isDrawing, setIsDrawing] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
   const [drawnPoints, setDrawnPoints] = useState<LatLngTuple[]>([]);
   const drawnPointsRef = useRef<LatLngTuple[]>([]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
   const [searching, setSearching] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     drawnPointsRef.current = drawnPoints;
   }, [drawnPoints]);
 
-  // ── Load Leaflet CSS + custom cursor style (SSR-safe) ──────────────────────
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    document.head.appendChild(link);
-    const style = document.createElement("style");
-    style.textContent =
-      ".leaflet-crosshair.leaflet-container{cursor:crosshair !important;}";
-    document.head.appendChild(style);
-    setMapReady(false);
-    return () => {
-      document.head.removeChild(link);
-      document.head.removeChild(style);
-    };
-  }, []);
-
-  // ── Initialize map with satellite basemap ─────────────────────────────────
+  // ── Initialize Leaflet Map with full-bleed dimensions and tile buffering ──
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     let cancelled = false;
+
     (async () => {
-      const L = (await import("leaflet")).default;
-      if (cancelled || !containerRef.current) return;
-      leafletRef.current = L;
+      try {
+        const L = (await import("leaflet")).default;
+        if (cancelled || !containerRef.current) return;
+        leafletRef.current = L;
 
-      const map = L.map(containerRef.current, {
-        zoomControl: true,
-        doubleClickZoom: true,
-      }).setView(center ?? DEFAULT_CENTER, zoom);
+        // Force container to have explicit dimensions if not already set
+        const el = containerRef.current;
+        el.style.position = "absolute";
+        el.style.top = "0";
+        el.style.left = "0";
+        el.style.width = "100%";
+        el.style.height = "100%";
 
-      tileRefs.current.satellite = L.tileLayer(SAT_TILES, {
-        attribution: SAT_ATTR,
-        maxZoom: 19,
-      });
-      tileRefs.current.labels = L.tileLayer(LABEL_TILES, { maxZoom: 19 });
-      tileRefs.current.street = L.tileLayer(OSM_TILES, {
-        attribution: OSM_ATTR,
-        maxZoom: 19,
-      });
-      map.addLayer(tileRefs.current.satellite);
-      map.addLayer(tileRefs.current.labels);
+        // Initialize map instance
+        const map = L.map(el, {
+          zoomControl: false,
+          attributionControl: false,
+          doubleClickZoom: false,
+          fadeAnimation: false,
+          zoomAnimation: true,
+          trackResize: true,
+        }).setView(center ?? DEFAULT_CENTER, zoom);
 
-      L.control.scale({ imperial: true, metric: true, position: "bottomright" }).addTo(map);
+        // Hybrid satellite tile layer with large buffer for seamless full-bleed rendering
+        tileRefs.current.satellite = L.tileLayer(GOOGLE_HYBRID, {
+          maxZoom: 20,
+          subdomains: ["mt0", "mt1", "mt2", "mt3"],
+          tileSize: 256,
+          keepBuffer: 12,
+          updateWhenIdle: false,
+          updateWhenZooming: true,
+        });
 
-      farmLayerRef.current = L.layerGroup().addTo(map);
-      previewLayerRef.current = L.layerGroup().addTo(map);
-      userLayerRef.current = L.layerGroup().addTo(map);
+        tileRefs.current.street = L.tileLayer(GOOGLE_STREET, {
+          maxZoom: 20,
+          subdomains: ["mt0", "mt1", "mt2", "mt3"],
+          tileSize: 256,
+          keepBuffer: 12,
+          updateWhenIdle: false,
+          updateWhenZooming: true,
+        });
 
-      mapRef.current = map;
-      setMapReady(true);
+        map.addLayer(tileRefs.current.satellite);
+
+        farmLayerRef.current = L.layerGroup().addTo(map);
+        previewLayerRef.current = L.layerGroup().addTo(map);
+        userLayerRef.current = L.layerGroup().addTo(map);
+
+        mapRef.current = map;
+        setMapReady(true);
+
+        // Repeated invalidation to fill the viewport as the parent container layout settles
+        map.whenReady(() => {
+          map.invalidateSize(true);
+        });
+
+        [50, 150, 300, 600, 1200].forEach((delay) => {
+          setTimeout(() => {
+            if (!cancelled && mapRef.current) {
+              mapRef.current.invalidateSize(true);
+            }
+          }, delay);
+        });
+      } catch (err) {
+        console.error("Leaflet initialization failed", err);
+      }
     })();
+
+    // ResizeObserver ensures 100% full-bleed coverage upon container resize
+    const ro = new ResizeObserver(() => {
+      if (mapRef.current) {
+        try {
+          mapRef.current.invalidateSize(true);
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+
+    if (containerRef.current) {
+      ro.observe(containerRef.current);
+    }
 
     return () => {
       cancelled = true;
+      ro.disconnect();
       if (mapRef.current) {
-        mapRef.current.remove();
+        try {
+          mapRef.current.remove();
+        } catch {
+          /* ignore */
+        }
         mapRef.current = null;
       }
     };
@@ -177,19 +216,23 @@ export default function FarmMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    const { satellite, labels, street } = tileRefs.current;
-    if (basemap === "satellite") {
-      if (street && map.hasLayer(street)) map.removeLayer(street);
-      if (satellite && !map.hasLayer(satellite)) map.addLayer(satellite);
-      if (labels && !map.hasLayer(labels)) map.addLayer(labels);
-    } else {
-      if (satellite && map.hasLayer(satellite)) map.removeLayer(satellite);
-      if (labels && map.hasLayer(labels)) map.removeLayer(labels);
-      if (street && !map.hasLayer(street)) map.addLayer(street);
+    const { satellite, street } = tileRefs.current;
+
+    try {
+      if (basemap === "satellite") {
+        if (street && map.hasLayer(street)) map.removeLayer(street);
+        if (satellite && !map.hasLayer(satellite)) map.addLayer(satellite);
+      } else {
+        if (satellite && map.hasLayer(satellite)) map.removeLayer(satellite);
+        if (street && !map.hasLayer(street)) map.addLayer(street);
+      }
+      map.invalidateSize(true);
+    } catch (e) {
+      console.error("Error switching basemap", e);
     }
   }, [basemap, mapReady]);
 
-  // ── Fly to farm when selection changes (unless polygon fits itself) ───────
+  // ── Fly to farm when selection changes ────────────────────────────────────
   useEffect(() => {
     if (!mapReady) return;
     if (skipFirstCenter.current) {
@@ -197,22 +240,28 @@ export default function FarmMap({
       return;
     }
     if (center && !polygonGeoJson) {
-      mapRef.current?.flyTo(center, zoom, { duration: 0.8 });
+      try {
+        mapRef.current?.flyTo(center, zoom, { duration: 0.8 });
+      } catch {
+        /* ignore */
+      }
     }
+    mapRef.current?.invalidateSize(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center, mapReady]);
 
-  // ── Render saved farm polygon + centroid marker, fit bounds ───────────────
+  // ── Render saved farm polygon + marker ────────────────────────────────────
   useEffect(() => {
     const L = leafletRef.current;
     const layer = farmLayerRef.current;
     if (!L || !layer || !mapReady) return;
-    layer.clearLayers();
-    if (!polygonGeoJson) return;
     try {
+      layer.clearLayers();
+      if (!polygonGeoJson) return;
+
       const geo = JSON.parse(polygonGeoJson);
       const gj = L.geoJSON(geo, {
-        style: { color: "#22c55e", weight: 3, fillOpacity: 0.2 },
+        style: { color: "#34d399", weight: 3.5, fillOpacity: 0.3 },
       }).addTo(layer);
 
       const ring: number[][] = geo.coordinates?.[0] ?? [];
@@ -221,9 +270,19 @@ export default function FarmMap({
         const lngs = ring.map((c) => c[0]);
         const cl = lats.reduce((a, b) => a + b, 0) / lats.length;
         const cg = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-        L.marker([cl, cg]).addTo(layer).bindPopup(farmLabel ?? "Farm");
+
+        L.circleMarker([cl, cg], {
+          radius: 7,
+          color: "#ffffff",
+          fillColor: "#10b981",
+          fillOpacity: 1,
+          weight: 2,
+        })
+          .addTo(layer)
+          .bindPopup(`<b>${farmLabel ?? "Farm"}</b><br/>${calculatePolygonAreaAcres(ring.map(c => [c[1], c[0]]))} acres`);
       }
-      mapRef.current?.fitBounds(gj.getBounds(), { padding: [40, 40], maxZoom: 18 });
+      mapRef.current?.fitBounds(gj.getBounds(), { padding: [50, 50], maxZoom: 18 });
+      mapRef.current?.invalidateSize(true);
     } catch {
       /* ignore parse errors */
     }
@@ -237,63 +296,67 @@ export default function FarmMap({
     }
     setDrawnPoints([]);
     setIsDrawing(false);
+    try {
+      previewLayerRef.current?.clearLayers();
+    } catch {
+      /* ignore */
+    }
   }, [resetSignal]);
 
-  // ── Click to add polygon points (only while drawing) ──────────────────────
+  // ── Drawing click handler ─────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !isDrawing) return;
+    if (!map || !mapReady) return;
 
     const onClick = (e: LeafletMouseEvent) => {
+      if (!isDrawing) return;
       setDrawnPoints((prev) => [...prev, [e.latlng.lat, e.latlng.lng]]);
     };
+
     map.on("click", onClick);
-    map.doubleClickZoom.disable();
     return () => {
       map.off("click", onClick);
-      map.doubleClickZoom.enable();
     };
   }, [isDrawing, mapReady]);
 
-  // ── Live drawing preview: numbered vertices + dashed outline ──────────────
+  // ── Live drawing preview: vertices + perimeter line ───────────────────────
   useEffect(() => {
     const L = leafletRef.current;
     const layer = previewLayerRef.current;
     if (!L || !layer || !mapReady) return;
-    layer.clearLayers();
-    if (drawnPoints.length === 0) return;
 
-    drawnPoints.forEach((p, i) => {
-      L.circleMarker(p, {
-        radius: 6,
-        color: "#ffffff",
-        weight: 2,
-        fillColor: "#16a34a",
-        fillOpacity: 1,
-      })
-        .addTo(layer)
-        .bindTooltip(String(i + 1), {
-          permanent: true,
-          direction: "top",
-          offset: [0, -6],
-          className: "text-[10px]",
-        });
-    });
-    if (drawnPoints.length >= 2) {
-      L.polyline(drawnPoints, {
-        color: "#16a34a",
-        weight: 2.5,
-        dashArray: "6 6",
-      }).addTo(layer);
-    }
-    if (drawnPoints.length >= 3) {
-      // Rubber band back to the first vertex
-      L.polyline([drawnPoints[drawnPoints.length - 1], drawnPoints[0]], {
-        color: "#16a34a",
-        weight: 1.5,
-        dashArray: "3 7",
-        opacity: 0.7,
-      }).addTo(layer);
+    try {
+      layer.clearLayers();
+      if (drawnPoints.length === 0) return;
+
+      drawnPoints.forEach((p) => {
+        L.circleMarker(p, {
+          radius: 6,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: "#10b981",
+          fillOpacity: 1,
+        }).addTo(layer);
+      });
+
+      if (drawnPoints.length >= 2) {
+        L.polyline(drawnPoints, {
+          color: "#34d399",
+          weight: 2.5,
+          dashArray: "6 6",
+        }).addTo(layer);
+      }
+
+      if (drawnPoints.length >= 3) {
+        L.polyline([drawnPoints[drawnPoints.length - 1], drawnPoints[0]], {
+          color: "#34d399",
+          weight: 1.5,
+          dashArray: "3 6",
+          opacity: 0.8,
+        }).addTo(layer);
+      }
+    } catch (e) {
+      console.error("Error updating preview layer", e);
     }
   }, [drawnPoints, mapReady]);
 
@@ -305,6 +368,11 @@ export default function FarmMap({
   const cancelDrawing = useCallback(() => {
     setDrawnPoints([]);
     setIsDrawing(false);
+    try {
+      previewLayerRef.current?.clearLayers();
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const finishPolygon = useCallback(async () => {
@@ -325,18 +393,21 @@ export default function FarmMap({
     const areaAcres = calculatePolygonAreaAcres(pts);
     const suggestedDistrict = await reverseGeocodeDistrict(centroid[0], centroid[1]);
 
-    // Freeze the preview into a solid polygon while the user fills the form
     const layer = previewLayerRef.current;
-    layer?.clearLayers();
     if (L && layer) {
-      L.polygon(pts, { color: "#16a34a", weight: 3, fillOpacity: 0.2 }).addTo(layer);
+      try {
+        layer.clearLayers();
+        L.polygon(pts, { color: "#34d399", weight: 3, fillOpacity: 0.25 }).addTo(layer);
+      } catch {
+        /* ignore */
+      }
     }
 
     onPolygonDrawn?.(geojson, centroid, areaAcres, suggestedDistrict);
     setIsDrawing(false);
   }, [onPolygonDrawn]);
 
-  // ── Keyboard shortcuts while drawing: Enter finish, Z undo, Esc cancel ────
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
     if (!isDrawing) return;
     const onKey = (e: KeyboardEvent) => {
@@ -355,13 +426,12 @@ export default function FarmMap({
     return () => window.removeEventListener("keydown", onKey);
   }, [isDrawing, finishPolygon, undoPoint, cancelDrawing]);
 
-  // ── Location search (Nominatim, restricted to Pakistan) ───────────────────
+  // ── Location search ───────────────────────────────────────────────────────
   const runSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const q = searchQuery.trim();
     if (!q) return;
     setSearching(true);
-    setSearchOpen(true);
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=pk&q=${encodeURIComponent(q)}`
@@ -376,232 +446,263 @@ export default function FarmMap({
   };
 
   const goToResult = (r: NominatimResult) => {
-    mapRef.current?.flyTo([Number(r.lat), Number(r.lon)], 17, { duration: 1 });
-    setSearchOpen(false);
+    try {
+      mapRef.current?.flyTo([Number(r.lat), Number(r.lon)], 17, { duration: 1 });
+    } catch {
+      /* ignore */
+    }
+    setShowSearch(false);
     setSearchResults([]);
   };
 
-  // ── GPS locate me ─────────────────────────────────────────────────────────
+  // ── GPS Locate ────────────────────────────────────────────────────────────
   const locateMe = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by this browser.");
-      return;
-    }
+    if (!navigator.geolocation) return;
     const L = leafletRef.current;
     setLocating(true);
-    userLayerRef.current?.clearLayers();
+    try {
+      userLayerRef.current?.clearLayers();
+    } catch {
+      /* ignore */
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const c: LatLngTuple = [pos.coords.latitude, pos.coords.longitude];
-        mapRef.current?.flyTo(c, 17, { duration: 1 });
-        if (L && mapRef.current) {
-          L.circle(c, {
-            radius: Math.max(pos.coords.accuracy, 30),
-            color: "#2563eb",
-            weight: 1,
-            fillOpacity: 0.08,
-          }).addTo(userLayerRef.current!);
-          L.circleMarker(c, {
-            radius: 8,
-            color: "#ffffff",
-            weight: 2,
-            fillColor: "#2563eb",
-            fillOpacity: 1,
-          })
-            .addTo(userLayerRef.current!)
-            .bindPopup(`Your location (±${Math.round(pos.coords.accuracy)} m)`)
-            .openPopup();
+        try {
+          mapRef.current?.flyTo(c, 17, { duration: 1 });
+          if (L && mapRef.current && userLayerRef.current) {
+            L.circleMarker(c, {
+              radius: 8,
+              color: "#ffffff",
+              weight: 2,
+              fillColor: "#10b981",
+              fillOpacity: 1,
+            }).addTo(userLayerRef.current);
+          }
+        } catch {
+          /* ignore */
         }
         setLocating(false);
       },
-      () => {
-        setLocating(false);
-        alert("Could not get your location. Check browser permissions.");
-      },
-      { enableHighAccuracy: true, timeout: 10_000 }
+      () => setLocating(false),
+      { enableHighAccuracy: true, timeout: 8000 }
     );
+  };
+
+  // ── Custom Zoom Actions ───────────────────────────────────────────────────
+  const zoomIn = () => {
+    try {
+      mapRef.current?.zoomIn();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const zoomOut = () => {
+    try {
+      mapRef.current?.zoomOut();
+    } catch {
+      /* ignore */
+    }
   };
 
   const liveArea = drawnPoints.length >= 3 ? calculatePolygonAreaAcres(drawnPoints) : 0;
   const canDraw = Boolean(onPolygonDrawn);
 
   return (
-    <div className="relative h-full w-full">
-      {/* ── Left control cluster: draw + basemap + locate ─────────────────── */}
-      <div className="absolute top-3 left-3 z-[1000] flex flex-col gap-2">
-        {canDraw &&
-          (!isDrawing ? (
+    <div className="relative h-full w-full select-none overflow-hidden rounded-2xl bg-abyss min-h-[420px]">
+      {/* ── Leaflet Map Canvas Container (Absolute Full-Bleed 100%) ────────── */}
+      <div className={`absolute inset-0 z-0 ${isDrawing ? "cursor-crosshair [&_.leaflet-interactive]:cursor-crosshair [&_.leaflet-container]:!cursor-crosshair" : ""}`}>
+        <div
+          ref={containerRef}
+          className="absolute inset-0 h-full w-full bg-abyss"
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%" }}
+        />
+      </div>
+
+      {/* ── Unified Floating Glass Command Bar (Top) ──────────────────────── */}
+      <div className="absolute top-3 inset-x-3 z-[1000] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        {/* Left: Draw Action Controls */}
+        <div className="pointer-events-auto flex items-center gap-1.5 rounded-xl border border-ink/12 bg-panel/95 p-1 shadow-2xl backdrop-blur-xl">
+          {canDraw && !isDrawing && (
             <button
               onClick={() => {
                 setDrawnPoints([]);
                 setIsDrawing(true);
               }}
-              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-3 py-1.5 text-sm font-semibold text-abyss shadow-[0_4px_16px_rgba(16,185,129,0.4)] transition-shadow hover:shadow-[0_4px_24px_rgba(16,185,129,0.6)]"
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-3 py-1.5 text-xs font-semibold text-abyss shadow-md hover:scale-[1.02] transition-all"
             >
-              <Icon name="pencil" size={13} />
-              Draw Farm
+              <Icon name="pencil" size={13} strokeWidth={2.4} />
+              Draw Field Boundary
             </button>
-          ) : (
-            <div className="flex gap-2">
+          )}
+
+          {isDrawing && (
+            <div className="flex items-center gap-1">
               <button
-                onClick={finishPolygon}
-                disabled={drawnPoints.length < 3}
-                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-3 py-1.5 text-sm font-semibold text-abyss shadow-[0_4px_16px_rgba(16,185,129,0.4)] transition-shadow hover:shadow-[0_4px_24px_rgba(16,185,129,0.6)] disabled:opacity-40 disabled:shadow-none"
+                onClick={async () => {
+                  setIsFinishing(true);
+                  try { await finishPolygon(); } finally { setIsFinishing(false); }
+                }}
+                disabled={drawnPoints.length < 3 || isFinishing}
+                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-3 py-1.5 text-xs font-semibold text-abyss shadow-md transition-all disabled:opacity-40"
               >
-                <Icon name="check" size={13} strokeWidth={2.5} />
-                Finish ({drawnPoints.length})
+                {isFinishing ? (
+                  <span className="h-3 w-3 rounded-full border-2 border-abyss border-r-transparent animate-spin" />
+                ) : (
+                  <Icon name="check" size={13} strokeWidth={2.5} />
+                )}
+                {isFinishing ? "Processing..." : `Finish (${drawnPoints.length} pts)`}
               </button>
               <button
                 onClick={undoPoint}
                 disabled={drawnPoints.length === 0}
-                className="flex items-center gap-1 rounded-lg border border-white/12 bg-panel/90 px-2.5 py-1.5 text-sm font-medium text-mist shadow-lg backdrop-blur transition-colors hover:bg-white/10 hover:text-ink disabled:opacity-40"
-                title="Undo last point (Z)"
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-mist hover:text-ink hover:bg-ink/8 disabled:opacity-40 transition-colors"
+                title="Undo point (Z)"
               >
-                <Icon name="undo" size={13} />
+                <Icon name="undo" size={12} />
                 Undo
               </button>
               <button
                 onClick={cancelDrawing}
-                className="flex items-center rounded-lg bg-red-500/90 px-2.5 py-1.5 text-sm font-medium text-white shadow-lg backdrop-blur transition-colors hover:bg-red-500"
+                className="flex items-center rounded-lg bg-rose-500/80 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-rose-500 transition-colors"
                 title="Cancel (Esc)"
               >
-                <Icon name="x" size={13} />
+                <Icon name="x" size={12} />
               </button>
             </div>
-          ))}
-
-        {/* Basemap toggle */}
-        <div className="flex overflow-hidden rounded-lg border border-white/12 bg-panel/90 shadow-lg backdrop-blur">
-          <button
-            onClick={() => setBasemap("satellite")}
-            className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors ${
-              basemap === "satellite"
-                ? "bg-brand/20 text-brand"
-                : "text-mist hover:bg-white/8 hover:text-ink"
-            }`}
-          >
-            <Icon name="satellite" size={12} />
-            Satellite
-          </button>
-          <button
-            onClick={() => setBasemap("street")}
-            className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors ${
-              basemap === "street"
-                ? "bg-brand/20 text-brand"
-                : "text-mist hover:bg-white/8 hover:text-ink"
-            }`}
-          >
-            <Icon name="layers" size={12} />
-            Street
-          </button>
-        </div>
-
-        <button
-          onClick={locateMe}
-          disabled={locating}
-          className="flex w-fit items-center gap-1.5 rounded-lg border border-white/12 bg-panel/90 px-2.5 py-1.5 text-xs font-medium text-sky-300 shadow-lg backdrop-blur transition-colors hover:bg-white/8 disabled:opacity-50"
-          title="Center the map on your current position"
-        >
-          <Icon name="crosshair" size={12} />
-          {locating ? "Locating…" : "Locate me"}
-        </button>
-      </div>
-
-      {/* ── Location search (top-right) ──────────────────────────────────── */}
-      <form
-        onSubmit={runSearch}
-        className="absolute top-3 right-3 z-[1000] w-64"
-      >
-        <div className="flex overflow-hidden rounded-lg border border-white/12 bg-panel/90 shadow-lg backdrop-blur">
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => searchResults.length > 0 && setSearchOpen(true)}
-            placeholder="Search location in Pakistan…"
-            className="min-w-0 flex-1 bg-transparent px-3 py-1.5 text-sm text-ink placeholder:text-dim focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={searching}
-            className="flex items-center bg-brand/20 px-3 text-brand transition-colors hover:bg-brand/30 disabled:opacity-50"
-          >
-            {searching ? "…" : <Icon name="search" size={14} />}
-          </button>
-        </div>
-        {searchOpen && (
-          <div className="mt-1 max-h-56 overflow-y-auto rounded-lg border border-white/12 bg-panel/95 py-1 shadow-[0_16px_48px_rgba(0,0,0,0.6)] backdrop-blur-xl">
-            {searchResults.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-dim">
-                {searching ? "Searching…" : "No places found"}
-              </p>
-            ) : (
-              searchResults.map((r, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => goToResult(r)}
-                  className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs text-mist transition-colors hover:bg-brand/10 hover:text-ink"
-                  title={r.display_name}
-                >
-                  <Icon name="mapPin" size={11} className="shrink-0 text-brand" />
-                  <span className="truncate">{r.display_name}</span>
-                </button>
-              ))
-            )}
-          </div>
-        )}
-      </form>
-
-      {/* ── Bottom-left: drawing hints + live measurements ───────────────── */}
-      {isDrawing && (
-        <div className="absolute bottom-3 left-3 z-[1000] max-w-md rounded-lg border border-white/12 bg-panel/90 px-3 py-2 text-xs text-mist shadow-lg backdrop-blur">
-          <p>
-            Click the map to add boundary points — draw over the satellite
-            imagery of your field.{" "}
-            <span className="text-dim">
-              Z = undo · Enter = finish · Esc = cancel
-            </span>
-          </p>
-          {drawnPoints.length > 0 && (
-            <p className="mt-1 flex items-center gap-2">
-              <span className="rounded bg-brand/15 px-1.5 py-0.5 font-semibold text-brand">
-                {drawnPoints.length} point{drawnPoints.length === 1 ? "" : "s"}
-              </span>
-              {drawnPoints.length >= 3 && (
-                <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 font-semibold text-emerald-300">
-                  ≈ {liveArea.toLocaleString()} acres ({(liveArea * 0.404686).toFixed(1)} ha)
-                </span>
-              )}
-            </p>
           )}
         </div>
-      )}
 
-      {/* ── Unsaved polygon chip (after finish, before save) ──────────────── */}
-      {!isDrawing && drawnPoints.length > 0 && canDraw && (
-        <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2 rounded-lg border border-white/12 bg-panel/90 px-3 py-2 text-xs shadow-lg backdrop-blur">
-          <span className="flex items-center gap-1 font-medium text-emerald-300">
-            <Icon name="check" size={12} strokeWidth={2.5} />
-            Polygon ready — fill the form to save
-          </span>
-          <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 font-semibold text-emerald-300">
-            {liveArea.toLocaleString()} acres
-          </span>
+        {/* Right: Basemap + Search + Locate + Zoom Controls */}
+        <div className="pointer-events-auto flex items-center gap-1.5 rounded-xl border border-ink/12 bg-panel/95 p-1 shadow-2xl backdrop-blur-xl">
+          {/* Basemap Toggle */}
+          <div className="flex rounded-lg bg-ink/6 p-0.5">
+            <button
+              onClick={() => setBasemap("satellite")}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${basemap === "satellite"
+                ? "bg-brand/20 text-brand font-semibold shadow-sm"
+                : "text-mist hover:text-ink"
+                }`}
+            >
+              Satellite
+            </button>
+            <button
+              onClick={() => setBasemap("street")}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${basemap === "street"
+                ? "bg-brand/20 text-brand font-semibold shadow-sm"
+                : "text-mist hover:text-ink"
+                }`}
+            >
+              Street
+            </button>
+          </div>
+
+          <div className="h-4 w-px bg-ink/10" />
+
+          {/* Search trigger */}
           <button
-            onClick={cancelDrawing}
-            className="flex items-center gap-1 text-dim transition-colors hover:text-red-400"
-            title="Discard polygon"
+            onClick={() => setShowSearch((v) => !v)}
+            className={`flex h-7 w-7 items-center justify-center rounded-lg text-mist hover:text-ink hover:bg-ink/8 transition-colors ${showSearch ? "bg-ink/10 text-brand" : ""}`}
+            title="Search location"
           >
-            <Icon name="x" size={11} /> Discard
+            <Icon name="search" size={13} />
           </button>
-        </div>
-      )}
 
-      {/* Map container */}
-      <div
-        ref={containerRef}
-        className={`h-full w-full ${isDrawing ? "leaflet-crosshair" : ""}`}
-      />
-    </div>
+          {/* GPS Locate */}
+          <button
+            onClick={locateMe}
+            disabled={locating}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-sky-300 hover:text-sky-200 hover:bg-ink/8 transition-colors disabled:opacity-50"
+            title="Locate my position"
+          >
+            <Icon name="crosshair" size={13} />
+          </button>
+
+          <div className="h-4 w-px bg-ink/10" />
+
+          {/* Zoom Buttons */}
+          <div className="flex items-center">
+            <button
+              onClick={zoomIn}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-mist hover:text-ink hover:bg-ink/8 transition-colors"
+              title="Zoom In"
+            >
+              <Icon name="plus" size={14} />
+            </button>
+            <button
+              onClick={zoomOut}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-mist hover:text-ink hover:bg-ink/8 transition-colors"
+              title="Zoom Out"
+            >
+              <Icon name="minus" size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Compact Search Drawer (Opens when search icon clicked) ─────────── */}
+      {
+        showSearch && (
+          <div className="absolute top-14 right-3 z-[1001] w-72 rounded-xl border border-ink/12 bg-panel/95 p-2 shadow-2xl backdrop-blur-xl">
+            <form onSubmit={runSearch} className="flex gap-1.5">
+              <input
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search Punjab city or farm…"
+                className="input-theme py-1 px-2.5 text-xs flex-1"
+              />
+              <button
+                type="submit"
+                disabled={searching}
+                className="rounded-lg bg-brand/20 px-2.5 text-brand hover:bg-brand/30 transition-colors text-xs"
+              >
+                {searching ? "…" : "Go"}
+              </button>
+            </form>
+
+            {searchResults.length > 0 && (
+              <div className="mt-2 max-h-48 overflow-y-auto space-y-1">
+                {searchResults.map((r, i) => (
+                  <button
+                    key={i}
+                    onClick={() => goToResult(r)}
+                    className="w-full rounded-lg px-2 py-1.5 text-left text-xs text-mist hover:bg-ink/8 hover:text-ink transition-colors truncate block"
+                  >
+                    {r.display_name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      }
+
+      {/* ── Drawing Mode Instruction Banner (Bottom) ───────────────────────── */}
+      {
+        isDrawing && (
+          <div className="absolute bottom-3 inset-x-3 z-[1000] flex items-center justify-between rounded-xl border border-brand/30 bg-panel/95 px-4 py-2 text-xs shadow-2xl backdrop-blur-xl">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-brand animate-ping" />
+              <span className="font-medium text-ink">
+                Click on satellite map to plot boundary points.
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {drawnPoints.length >= 3 && (
+                <span className="font-mono text-xs font-bold text-brand">
+                  ≈ {liveArea.toLocaleString()} acres
+                </span>
+              )}
+              <span className="text-[11px] text-dim hidden sm:inline font-mono">
+                Press <kbd className="rounded bg-ink/10 px-1 text-ink">Enter</kbd> to finish &middot; <kbd className="rounded bg-ink/10 px-1 text-ink">Esc</kbd> to cancel
+              </span>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 }

@@ -12,14 +12,7 @@ import {
 } from "recharts";
 import type { FarmIntelligence } from "@/lib/api";
 import Icon from "@/components/Icon";
-
-const TOOLTIP_STYLE = {
-  fontSize: 12,
-  borderRadius: 10,
-  background: "rgba(11,18,16,0.95)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  color: "#ecf5ef",
-};
+import { useLanguage } from "./LanguageProvider";
 
 type MlMeta = NonNullable<FarmIntelligence["ml"]>;
 
@@ -29,32 +22,70 @@ interface ScoreForecastChartProps {
   ml?: MlMeta | null;
 }
 
-const trainedOnLabels: Record<string, string> = {
-  observed: "real snapshots",
-  mixed: "snapshots + rule bootstrap",
-  bootstrapped: "rule bootstrap",
+const trainedOnLabels: Record<string, { en: string; ur: string }> = {
+  observed: { en: "real snapshots", ur: "حقیقی فیلڈ ریکارڈ" },
+  mixed: { en: "snapshots + rule bootstrap", ur: "فیلڈ ریکارڈ + ماڈل بوٹ سٹریپ" },
+  bootstrapped: { en: "rule bootstrap", ur: "ماڈل بوٹ سٹریپ" },
 };
 
-function dayLabel(dateStr: string): string {
+const dayNamesUrdu: Record<string, string> = {
+  Mon: "پیر",
+  Tue: "منگل",
+  Wed: "بدھ",
+  Thu: "جمعرات",
+  Fri: "جمعہ",
+  Sat: "ہفتہ",
+  Sun: "اتوار",
+};
+
+function dayLabel(dateStr: string, isUrdu = false): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-PK", { weekday: "short" });
+  const weekday = d.toLocaleDateString("en-PK", { weekday: "short" });
+  const dayNum = d.toLocaleDateString("en-PK", { day: "numeric" });
+  const localizedDay = isUrdu ? dayNamesUrdu[weekday] || weekday : weekday;
+  return `${localizedDay} ${dayNum}`;
 }
 
-export default function ScoreForecastChart({ forecast, currentScore, ml }: ScoreForecastChartProps) {
-  const header = (
-    <div className="mb-4 flex items-center justify-between">
-      <div>
-        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-mist">
-          <Icon name="bot" size={13} className="text-violet-400" />
-          7-Day Health Score Forecast
-        </h3>
-        <p className="mt-0.5 text-[10px] text-dim">
-          Predicted by a random forest trained on this farm&rsquo;s own recorded observations
-        </p>
+const CustomTooltip = ({ active, payload, label, isUrdu }: { active?: boolean; payload?: Array<{ value: number }>; label?: string; isUrdu?: boolean }) => {
+  if (active && payload && payload.length) {
+    const val = payload[0].value;
+    return (
+      <div className="rounded-xl border border-ink/12 bg-panel/95 p-3 shadow-2xl backdrop-blur-xl text-xs font-mono">
+        <p className="text-dim text-[10px] mb-1">{label}</p>
+        <div className="flex items-baseline gap-2">
+          <span className="text-base font-bold text-violet-400 tabular-nums">{val}</span>
+          <span className="text-[11px] text-mist font-sans">
+            {isUrdu ? "متوقع فیلڈ صحت اسکور" : "Predicted Health Score"}
+          </span>
+        </div>
       </div>
+    );
+  }
+  return null;
+};
+
+export default function ScoreForecastChart({ forecast, currentScore, ml }: ScoreForecastChartProps) {
+  const { t, isUrdu } = useLanguage();
+
+  const header = (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-500/15 text-violet-400 ring-1 ring-violet-400/30">
+          <Icon name="bot" size={14} />
+        </span>
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-mist">
+            {t("mlForecastTitle", "7-Day Health Score ML Forecast")}
+          </h3>
+          <p className="text-[10px] text-dim font-mono">
+            {t("mlForecastSubtext", "Random Forest regression model trained on local farm observation history")}
+          </p>
+        </div>
+      </div>
+
       {ml && (
-        <span className="rounded-md border border-violet-400/25 bg-violet-400/10 px-2 py-0.5 text-[10px] font-medium text-violet-300">
-          Local ML
+        <span className="hud-pill text-violet-300 border-violet-400/25 bg-violet-500/10">
+          Scikit-Learn ML Node
         </span>
       )}
     </div>
@@ -64,16 +95,20 @@ export default function ScoreForecastChart({ forecast, currentScore, ml }: Score
     return (
       <div className="glass-panel p-5">
         {header}
-        <p className="py-8 text-center text-sm text-dim">
-          The local ML model needs a few more farm observations before it can forecast —
-          keep refreshing the dashboard to accumulate training data.
-        </p>
+        <div className="rounded-xl border border-ink/6 bg-ink/[0.02] p-8 text-center">
+          <Icon name="bot" size={24} className="mx-auto text-dim mb-2" />
+          <p className="text-xs text-dim">
+            {isUrdu
+              ? "مشین لرننگ ماڈل دی تربیت جاری اے۔ ڈیٹا جمع ہون تے پیشگوئی ظاہر ہو جائے گی۔"
+              : "The local ML engine is calibrating — visit the dashboard regularly to accumulate training snapshots."}
+          </p>
+        </div>
       </div>
     );
   }
 
   const data = forecast.map((f) => ({
-    label: dayLabel(f.date),
+    label: dayLabel(f.date, isUrdu),
     date: f.date,
     predicted_score: f.predicted_score,
   }));
@@ -83,69 +118,72 @@ export default function ScoreForecastChart({ forecast, currentScore, ml }: Score
   const delta = currentScore != null ? last - currentScore : last - first;
   const deltaLabel =
     delta === 0
-      ? `holding steady at ${last}`
+      ? isUrdu ? `${last} تے مستحکم` : `holding steady at ${last}`
       : delta > 0
-        ? `trending up to ${last} (+${delta} by ${dayLabel(data[data.length - 1].date)})`
-        : `trending down to ${last} (${delta} by ${dayLabel(data[data.length - 1].date)})`;
-  const deltaColor = delta > 0 ? "text-emerald-400" : delta < 0 ? "text-red-400" : "text-mist";
+        ? isUrdu ? `${last} تک بہتری (+${delta} پوائنٹس)` : `trending up to ${last} (+${delta} pts)`
+        : isUrdu ? `${last} تک کمی (${delta} پوائنٹس)` : `trending down to ${last} (${delta} pts)`;
+  const deltaColor = delta > 0 ? "text-emerald-400" : delta < 0 ? "text-rose-400" : "text-mist";
 
-  const trainedOn = ml ? (trainedOnLabels[ml.trained_on] ?? ml.trained_on) : null;
-  const trainedAt = ml?.trained_at
-    ? new Date(ml.trained_at.endsWith("Z") ? ml.trained_at : `${ml.trained_at}Z`).toLocaleString(
-        "en-PK",
-        { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }
-      )
+  const trainedOn = ml
+    ? isUrdu
+      ? trainedOnLabels[ml.trained_on]?.ur || ml.trained_on
+      : trainedOnLabels[ml.trained_on]?.en || ml.trained_on
     : null;
 
   return (
-    <div className="glass-panel p-5">
+    <div className="glass-panel p-5 relative overflow-hidden">
       {header}
 
       {/* Latest predicted value row */}
-      <div className="mb-3 flex items-baseline gap-3">
-        <span className="text-3xl font-bold tabular-nums text-ink">{data[data.length - 1].predicted_score}</span>
-        <span className="text-xs text-dim">
-          predicted score by {dayLabel(data[data.length - 1].date)}
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-bold font-mono tabular-nums text-violet-300">
+            {data[data.length - 1].predicted_score}
+          </span>
+          <span className="text-xs text-dim font-mono">
+            {isUrdu ? `${data[data.length - 1].label} تک متوقع اسکور` : `projected by ${data[data.length - 1].label}`}
+          </span>
+        </div>
+
+        <span className={`inline-flex items-center gap-1 rounded-full border border-ink/8 bg-ink/4 px-2.5 py-1 text-xs font-mono font-semibold ${deltaColor}`}>
+          <Icon name={delta >= 0 ? "trendUp" : "trendDown"} size={13} />
+          {deltaLabel}
         </span>
-        <span className={`ml-auto text-xs font-medium ${deltaColor}`}>{deltaLabel}</span>
       </div>
 
-      <div className="h-56">
+      <div className="h-60">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
             <defs>
               <linearGradient id="forecastFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.35} />
+                <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.4} />
                 <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 10, fill: "#9db4a7" }}
-              interval="preserveStartEnd"
-              stroke="rgba(255,255,255,0.15)"
+              tick={{ fontSize: 10, fill: "#9db4a7", fontFamily: "var(--font-mono)" }}
+              stroke="rgba(255,255,255,0.1)"
             />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9db4a7" }} stroke="rgba(255,255,255,0.15)" />
-            <Tooltip
-              contentStyle={TOOLTIP_STYLE}
-              formatter={(value) => [Number(value), "Predicted score"]}
-              labelFormatter={(label, payload) => {
-                const point = payload?.[0]?.payload as { date: string } | undefined;
-                return point ? `${label} · ${point.date}` : String(label);
-              }}
+            <YAxis
+              domain={[0, 100]}
+              tick={{ fontSize: 10, fill: "#9db4a7", fontFamily: "var(--font-mono)" }}
+              stroke="rgba(255,255,255,0.1)"
             />
+            <Tooltip content={<CustomTooltip isUrdu={isUrdu} />} />
             {currentScore != null && (
               <ReferenceLine
                 y={currentScore}
                 stroke="#34d399"
                 strokeDasharray="4 4"
-                strokeWidth={1}
+                strokeWidth={1.5}
                 label={{
-                  value: `now ${currentScore}`,
-                  position: "insideBottomLeft",
+                  value: isUrdu ? `موجودہ اسکور (${currentScore})` : `Current Score (${currentScore})`,
+                  position: "insideTopLeft",
                   fontSize: 10,
                   fill: "#34d399",
+                  fontFamily: "var(--font-mono)",
                 }}
               />
             )}
@@ -154,10 +192,10 @@ export default function ScoreForecastChart({ forecast, currentScore, ml }: Score
               dataKey="predicted_score"
               stroke="#a78bfa"
               strokeWidth={2.5}
-              strokeDasharray="6 3"
+              strokeDasharray="6 4"
               fill="url(#forecastFill)"
               dot={{ r: 3, fill: "#a78bfa", stroke: "none" }}
-              activeDot={{ r: 5, fill: "#c4b5fd" }}
+              activeDot={{ r: 5, fill: "#c4b5fd", stroke: "#05090a", strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -165,13 +203,11 @@ export default function ScoreForecastChart({ forecast, currentScore, ml }: Score
 
       {/* Training transparency footer */}
       {ml && (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-white/6 pt-2">
-          <p className="text-[10px] text-dim">
-            Trained on {ml.samples} local observations ({ml.observed_samples} real snapshots,{" "}
-            {trainedOn}) · fit R² {ml.fit_r2}
-            {trainedAt ? ` · retrained ${trainedAt}` : ""}
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-ink/6 pt-2 text-[10px] font-mono text-dim">
+          <p>
+            {isUrdu ? "تربیت کیتا گیا" : "Trained on"} {ml.samples} {isUrdu ? "مشاہدات تے" : "observations"} ({ml.observed_samples} {isUrdu ? "اصل فیلڈ ریکارڈز" : "real snapshots"}, {trainedOn}) &middot; Model Fit R² {ml.fit_r2}
           </p>
-          <p className="text-[10px] text-violet-400/80">┄ dashed = ML projection</p>
+          <p className="text-violet-400/90">&bull; {isUrdu ? "ڈیش لائن اگلے 7 دن دی مشین لرننگ پیشگوئی اے" : "Dashed line represents 7-day ML projection"}</p>
         </div>
       )}
     </div>

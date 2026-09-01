@@ -13,20 +13,12 @@ import {
 import type { ScoreSnapshot } from "@/lib/api";
 import Icon from "@/components/Icon";
 
-const TOOLTIP_STYLE = {
-  fontSize: 12,
-  borderRadius: 10,
-  background: "rgba(11,18,16,0.95)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  color: "#ecf5ef",
-};
-
 interface ScoreTrendChartProps {
   snapshots: ScoreSnapshot[];
 }
 
 const SERIES = [
-  { key: "overall", label: "Overall", color: "#34d399", width: 3 },
+  { key: "overall", label: "Overall", color: "#34d399", width: 2.5 },
   { key: "vegetation", label: "Vegetation", color: "#a3e635", width: 1.5 },
   { key: "water", label: "Water", color: "#38bdf8", width: 1.5 },
   { key: "weather", label: "Weather", color: "#fbbf24", width: 1.5 },
@@ -36,7 +28,7 @@ const SERIES = [
 
 function parseTs(ts: string | null): Date | null {
   if (!ts) return null;
-  return new Date(ts.endsWith("Z") ? ts : `${ts}Z`); // server stores UTC without suffix
+  return new Date(ts.endsWith("Z") ? ts : `${ts}Z`);
 }
 
 function axisLabel(ts: string | null): string {
@@ -45,16 +37,43 @@ function axisLabel(ts: string | null): string {
   return d.toLocaleDateString("en-PK", { day: "numeric", month: "short" });
 }
 
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; payload: { time: string } }> }) => {
+  if (active && payload && payload.length) {
+    const time = payload[0]?.payload?.time || "";
+    return (
+      <div className="rounded-xl border border-ink/12 bg-panel/95 p-3 shadow-2xl backdrop-blur-xl text-xs font-mono">
+        <p className="text-dim text-[10px] mb-1.5 pb-1 border-b border-ink/8">{time}</p>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+          {payload.map((entry) => (
+            <div key={entry.name} className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1 text-mist">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                {entry.name}:
+              </span>
+              <span className="font-bold text-ink tabular-nums">{entry.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function ScoreTrendChart({ snapshots }: ScoreTrendChartProps) {
   const header = (
-    <div className="mb-4">
-      <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-mist">
-        <Icon name="activity" size={13} className="text-emerald-400" />
-        Health Score Trend
-      </h3>
-      <p className="mt-0.5 text-[10px] text-dim">
-        Snapshot recorded on every intelligence refresh (deduplicated hourly)
-      </p>
+    <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-400/30">
+          <Icon name="activity" size={14} />
+        </span>
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-mist">
+          Historical Score Progression
+        </h3>
+      </div>
+      <span className="hud-pill text-emerald-300 border-emerald-400/25 bg-emerald-500/10">
+        AgriCore History
+      </span>
     </div>
   );
 
@@ -62,9 +81,12 @@ export default function ScoreTrendChart({ snapshots }: ScoreTrendChartProps) {
     return (
       <div className="glass-panel p-5">
         {header}
-        <p className="py-8 text-center text-sm text-dim">
-          No score snapshots yet — open the farm dashboard to record the first one.
-        </p>
+        <div className="rounded-xl border border-ink/6 bg-ink/[0.02] p-8 text-center">
+          <Icon name="activity" size={24} className="mx-auto text-dim mb-2" />
+          <p className="text-xs text-dim">
+            No score snapshots recorded yet. Open the farm dashboard to log real-time data.
+          </p>
+        </div>
       </div>
     );
   }
@@ -84,26 +106,27 @@ export default function ScoreTrendChart({ snapshots }: ScoreTrendChartProps) {
   });
 
   return (
-    <div className="glass-panel p-5">
+    <div className="glass-panel p-5 relative overflow-hidden">
       {header}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <LineChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 10, fill: "#9db4a7" }}
-              interval="preserveStartEnd"
-              stroke="rgba(255,255,255,0.15)"
+              tick={{ fontSize: 10, fill: "#9db4a7", fontFamily: "var(--font-mono)" }}
+              stroke="rgba(255,255,255,0.1)"
             />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9db4a7" }} stroke="rgba(255,255,255,0.15)" />
-            <Tooltip
-              contentStyle={TOOLTIP_STYLE}
-              labelFormatter={(_, payload) =>
-                payload?.length ? (payload[0].payload as { time: string }).time : ""
-              }
+            <YAxis
+              domain={[0, 100]}
+              tick={{ fontSize: 10, fill: "#9db4a7", fontFamily: "var(--font-mono)" }}
+              stroke="rgba(255,255,255,0.1)"
             />
-            <Legend wrapperStyle={{ fontSize: 11, color: "#9db4a7" }} iconSize={8} />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend
+              wrapperStyle={{ fontSize: 11, fontFamily: "var(--font-mono)", paddingTop: 8 }}
+              iconSize={8}
+            />
             {SERIES.map((s) => (
               <Line
                 key={s.key}

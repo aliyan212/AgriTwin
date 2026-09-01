@@ -31,6 +31,7 @@ from app.services.weather_service import weather_service
 
 import agricore
 import alerts as alert_engine
+import crop_knowledge
 
 router = APIRouter(prefix="/farms", tags=["intelligence"])
 
@@ -46,26 +47,17 @@ def _get_farm_or_404(db: Session, farm_id: int) -> Farm:
     return farm
 
 
-def _build_farm_context(
+def _build_context(
     farm: Farm,
-    current_weather: dict,
-    daily_forecast: dict | None,
-    climate_anomaly: dict | None,
+    latest_crop: Crop | None,
+    current: dict,
+    forecast: dict,
     ndvi_series: list[dict],
-    db: Session,
+    climate_anomaly: dict | None,
 ) -> agricore.FarmContext:
-    """Build a FarmContext from live weather, climate baseline, NDVI and crop data."""
-    current = current_weather.get("current", {})
-
-    # Most recent crop
-    latest_crop = (
-        db.query(Crop).filter(Crop.farm_id == farm.id).order_by(Crop.id.desc()).first()
-    )
-
-    # Get ET₀ from daily forecast if available
     et0 = None
-    if daily_forecast:
-        et0_list = daily_forecast.get("et0_fao_evapotranspiration")
+    if "daily" in forecast and "et0_fao_evapotranspiration" in forecast["daily"]:
+        et0_list = forecast["daily"]["et0_fao_evapotranspiration"]
         if et0_list:
             et0 = et0_list[0]  # today's ET₀
 
@@ -77,10 +69,18 @@ def _build_farm_context(
         else None
     )
 
+    current_growth_stage = None
+    if latest_crop:
+        if latest_crop.sowing_date:
+            derived = crop_knowledge.derive_growth_stage(latest_crop.crop_name, latest_crop.sowing_date)
+            current_growth_stage = derived["stage"]
+        else:
+            current_growth_stage = latest_crop.growth_stage
+
     return agricore.FarmContext(
         farm_id=farm.id,
         crop_name=latest_crop.crop_name if latest_crop else None,
-        growth_stage=latest_crop.growth_stage if latest_crop else None,
+        growth_stage=current_growth_stage,
         sowing_date=str(latest_crop.sowing_date) if latest_crop and latest_crop.sowing_date else None,
         temperature_c=current.get("temperature_2m"),
         humidity_pct=current.get("relative_humidity_2m"),
@@ -368,7 +368,7 @@ async def get_farm_intelligence(farm_id: int, db: Session = Depends(get_db)):
         "crop": {
             "name": latest_crop.crop_name if latest_crop else None,
             "season": latest_crop.season if latest_crop else None,
-            "growth_stage": latest_crop.growth_stage if latest_crop else None,
+            "growth_stage": ctx.growth_stage,
             "sowing_date": str(latest_crop.sowing_date) if latest_crop and latest_crop.sowing_date else None,
         } if latest_crop else None,
         "weather": {
@@ -432,6 +432,8 @@ async def get_farm_intelligence(farm_id: int, db: Session = Depends(get_db)):
         "recommendation": {
             "text": rec.text,
             "reasoning": rec.reasoning,
+            "text_ur": rec.text_ur,
+            "reasoning_ur": rec.reasoning_ur,
             "confidence": rec.confidence,
             "risk_level": rec.risk_level,
         },
