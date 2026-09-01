@@ -28,6 +28,7 @@ backend/ml_models/
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # ── IDE ────────────────────────────────────────────────────────────────────────
 .vscode/
