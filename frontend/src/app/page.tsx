@@ -10,6 +10,7 @@ import NdviChart from "@/components/NdviChart";
 import RecommendationPanel from "@/components/RecommendationPanel";
 import ForecastChart from "@/components/ForecastChart";
 import CropManager from "@/components/CropManager";
+import FarmSelector from "@/components/FarmSelector";
 
 // Dynamic import prevents SSR issues with Leaflet
 const FarmMap = dynamic(() => import("@/components/FarmMap"), { ssr: false });
@@ -48,10 +49,13 @@ export default function DashboardPage() {
 
   // Farm creation state
   const [newFarmName, setNewFarmName] = useState("");
-  const [newFarmDistrict, setNewFarmDistrict] = useState("Gujrat");
+  const [newFarmDistrict, setNewFarmDistrict] = useState("");
   const [drawnPolygon, setDrawnPolygon] = useState<string | null>(null);
   const [drawnCentroid, setDrawnCentroid] = useState<[number, number] | null>(null);
   const [drawnArea, setDrawnArea] = useState<number | null>(null);
+  const [districtAutoDetected, setDistrictAutoDetected] = useState(false);
+  // Increment to clear the unsaved drawing from the map
+  const [drawReset, setDrawReset] = useState(0);
 
   // ── Load farms on mount ─────────────────────────────────────────────────
   useEffect(() => {
@@ -137,12 +141,23 @@ export default function DashboardPage() {
     }
   }, [selectedFarm]);
 
-  // ── Handle polygon drawn on map ─────────────────────────────────────────
+  // ── Handle polygon drawn on map (district auto-detected from location) ──
   const handlePolygonDrawn = useCallback(
-    (geojson: string, centroid: [number, number], areaAcres: number) => {
+    (
+      geojson: string,
+      centroid: [number, number],
+      areaAcres: number,
+      suggestedDistrict?: string
+    ) => {
       setDrawnPolygon(geojson);
       setDrawnCentroid(centroid);
       setDrawnArea(areaAcres);
+      if (suggestedDistrict) {
+        setNewFarmDistrict(suggestedDistrict);
+        setDistrictAutoDetected(true);
+      } else {
+        setDistrictAutoDetected(false);
+      }
       setShowCreateForm(true);
     },
     []
@@ -168,6 +183,8 @@ export default function DashboardPage() {
       setDrawnPolygon(null);
       setDrawnCentroid(null);
       setDrawnArea(null);
+      setDistrictAutoDetected(false);
+      setDrawReset((n) => n + 1); // clear the drawing off the map
     } catch (err) {
       alert(`Failed to create farm: ${err}`);
     }
@@ -210,21 +227,7 @@ export default function DashboardPage() {
               Sign In
             </Link>
           )}
-          <select
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
-            value={selectedFarm?.id ?? ""}
-            onChange={(e) => {
-              const f = farms.find((f) => f.id === Number(e.target.value));
-              setSelectedFarm(f ?? null);
-            }}
-          >
-            <option value="">Select a farm...</option>
-            {farms.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name} ({f.district ?? f.province})
-              </option>
-            ))}
-          </select>
+          <FarmSelector farms={farms} selected={selectedFarm} onSelect={setSelectedFarm} />
           {selectedFarm && (
             <Link
               href={`/farms/${selectedFarm.id}`}
@@ -244,10 +247,12 @@ export default function DashboardPage() {
             center={
               selectedFarm?.latitude && selectedFarm?.longitude
                 ? [selectedFarm.latitude, selectedFarm.longitude]
-                : [32.5736, 74.0782]
+                : undefined
             }
-            zoom={13}
+            zoom={16}
             polygonGeoJson={selectedFarm?.geometry_geojson}
+            farmLabel={selectedFarm?.name ?? null}
+            resetSignal={drawReset}
             onPolygonDrawn={handlePolygonDrawn}
           />
         </div>
@@ -303,22 +308,38 @@ export default function DashboardPage() {
                   onChange={(e) => setNewFarmName(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
                 />
-                <input
-                  type="text"
-                  placeholder="District"
-                  value={newFarmDistrict}
-                  onChange={(e) => setNewFarmDistrict(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
-                />
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    District{" "}
+                    {districtAutoDetected && (
+                      <span className="font-normal text-green-600">
+                        · auto-detected from location
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="District"
+                    value={newFarmDistrict}
+                    onChange={(e) => {
+                      setNewFarmDistrict(e.target.value);
+                      setDistrictAutoDetected(false);
+                    }}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+                  />
+                </div>
                 {drawnCentroid && (
                   <p className="text-xs text-gray-500">
-                    Centroid: {drawnCentroid[0].toFixed(4)},{" "}
-                    {drawnCentroid[1].toFixed(4)}
-                  </p>
-                )}
-                {drawnArea !== null && (
-                  <p className="text-xs text-gray-500">
-                    Area: <span className="font-semibold text-green-700">{drawnArea} acres</span>
+                    📍 {drawnCentroid[0].toFixed(5)}, {drawnCentroid[1].toFixed(5)}
+                    {drawnArea !== null && (
+                      <>
+                        {" "}·{" "}
+                        <span className="font-semibold text-green-700">
+                          {drawnArea.toLocaleString()} acres
+                        </span>{" "}
+                        ({(drawnArea * 0.404686).toFixed(1)} ha)
+                      </>
+                    )}
                   </p>
                 )}
                 <div className="flex gap-2">
@@ -335,6 +356,8 @@ export default function DashboardPage() {
                       setDrawnPolygon(null);
                       setDrawnCentroid(null);
                       setDrawnArea(null);
+                      setDistrictAutoDetected(false);
+                      setDrawReset((n) => n + 1);
                     }}
                     className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
                   >
@@ -395,12 +418,12 @@ export default function DashboardPage() {
           Data Sources
         </h3>
         <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-          <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">Open-Meteo (Weather)</span>
-          <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">NASA POWER (Historical)</span>
-          <span className="rounded bg-green-50 px-2 py-1 text-green-700">Sentinel-2 (NDVI)</span>
-          <span className="rounded bg-purple-50 px-2 py-1 text-purple-700">ERA5-Land (Soil)</span>
-          <span className="rounded bg-teal-50 px-2 py-1 text-teal-700">Punjab Agri (Crop Data)</span>
-          <span className="rounded bg-yellow-50 px-2 py-1 text-yellow-700">PMD (Agromet)</span>
+          <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">Open-Meteo (Weather + Soil)</span>
+          <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">NASA POWER (Historical Climate)</span>
+          <span className="rounded bg-green-50 px-2 py-1 text-green-700">MODIS Terra (NDVI)</span>
+          <span className="rounded bg-purple-50 px-2 py-1 text-purple-700">AgriCore (Score Engine)</span>
+          <span className="rounded bg-teal-50 px-2 py-1 text-teal-700">Punjab Crop Knowledge</span>
+          <span className="rounded bg-yellow-50 px-2 py-1 text-yellow-700">OSM Nominatim (Geocoding)</span>
         </div>
       </div>
     </div>

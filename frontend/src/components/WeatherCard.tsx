@@ -4,9 +4,10 @@ interface WeatherCardProps {
   data: Record<string, unknown> | null;
   loading?: boolean;
   error?: string | null;
+  airQuality?: { pm2_5: number | null; pm10: number | null } | null;
 }
 
-export default function WeatherCard({ data, loading, error }: WeatherCardProps) {
+export default function WeatherCard({ data, loading, error, airQuality }: WeatherCardProps) {
   if (loading) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -68,9 +69,16 @@ export default function WeatherCard({ data, loading, error }: WeatherCardProps) 
         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
           Current Weather
         </h3>
-        <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
-          Open-Meteo
-        </span>
+        <div className="flex items-center gap-1.5">
+          {airQuality?.pm2_5 != null && (
+            <span className="rounded bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700">
+              PM2.5 {airQuality.pm2_5} µg/m³
+            </span>
+          )}
+          <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+            Open-Meteo
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

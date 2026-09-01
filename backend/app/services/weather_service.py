@@ -12,6 +12,7 @@ class WeatherService:
 
     def __init__(self):
         self.open_meteo_url = settings.OPEN_METEO_BASE_URL
+        self.air_quality_url = settings.OPEN_METEO_AIR_QUALITY_URL
         self.nasa_power_url = settings.NASA_POWER_BASE_URL
 
     async def get_forecast_open_meteo(
@@ -43,7 +44,9 @@ class WeatherService:
                 [
                     "temperature_2m_max",
                     "temperature_2m_min",
+                    "relative_humidity_2m_mean",
                     "precipitation_sum",
+                    "wind_speed_10m_max",
                     "et0_fao_evapotranspiration",
                     "sunrise",
                     "sunset",
@@ -81,6 +84,38 @@ class WeatherService:
             resp = await client.get(f"{self.open_meteo_url}/forecast", params=params)
             resp.raise_for_status()
             return resp.json()
+
+    async def get_air_quality(self, lat: float, lon: float) -> dict | None:
+        """Fetch real-time air quality (PM2.5 / PM10) from the Open-Meteo
+        Air Quality API (CAMS global forecast, no API key required).
+
+        Returns None on any failure — air quality is informational only.
+        """
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(
+                    f"{self.air_quality_url}/air-quality",
+                    params={
+                        "latitude": lat,
+                        "longitude": lon,
+                        "current": "pm2_5,pm10",
+                        "timezone": "Asia/Karachi",
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+        except Exception:
+            return None
+
+        current = data.get("current", {})
+        if current.get("pm2_5") is None and current.get("pm10") is None:
+            return None
+        return {
+            "pm2_5": current.get("pm2_5"),
+            "pm10": current.get("pm10"),
+            "source": "Open-Meteo Air Quality (CAMS)",
+            "updated_at": current.get("time"),
+        }
 
     async def get_historical_nasa_power(
         self, lat: float, lon: float, start_date: str, end_date: str

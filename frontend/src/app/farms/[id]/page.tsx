@@ -10,6 +10,7 @@ import WeatherCard from "@/components/WeatherCard";
 import ForecastChart from "@/components/ForecastChart";
 import NdviChart from "@/components/NdviChart";
 import ClimateCard from "@/components/ClimateCard";
+import ScoreForecastChart from "@/components/ScoreForecastChart";
 import AlertsPanel from "@/components/AlertsPanel";
 import RecommendationPanel from "@/components/RecommendationPanel";
 import DataProvenance from "@/components/DataProvenance";
@@ -123,6 +124,12 @@ export default function FarmDetailPage() {
           >
             {intel.score.status} — {intel.score.value}/100
           </span>
+          <Link
+            href={`/farms/${farmId}/history`}
+            className="rounded-lg border border-green-200 bg-green-50 px-4 py-1.5 text-sm font-medium text-green-700 hover:bg-green-100"
+          >
+            View History
+          </Link>
           <button
             onClick={() => {
               setRefreshing(true);
@@ -205,7 +212,7 @@ export default function FarmDetailPage() {
 
       {/* ── Weather + Forecast ────────────────────────────────────────────── */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <WeatherCard data={weatherData} loading={false} error={null} />
+        <WeatherCard data={weatherData} loading={false} error={null} airQuality={intel.weather.air_quality} />
         <ForecastChart data={forecastData} loading={false} />
       </div>
 
@@ -220,6 +227,15 @@ export default function FarmDetailPage() {
           climate={intel.climate}
           currentTemp={intel.weather.temperature_c}
           currentHumidity={intel.weather.humidity_pct}
+        />
+      </div>
+
+      {/* ── 7-Day ML Score Forecast ───────────────────────────────── */}
+      <div className="mt-6">
+        <ScoreForecastChart
+          forecast={intel.score_forecast}
+          currentScore={intel.score.value}
+          ml={intel.ml}
         />
       </div>
 

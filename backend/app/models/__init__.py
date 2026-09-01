@@ -57,6 +57,9 @@ class Farm(Base):
     soil_observations = relationship("SoilObservation", back_populates="farm", cascade="all, delete-orphan")
     recommendations = relationship("Recommendation", back_populates="farm", cascade="all, delete-orphan")
     alerts = relationship("Alert", back_populates="farm", cascade="all, delete-orphan")
+    score_snapshots = relationship(
+        "HealthScoreSnapshot", back_populates="farm", cascade="all, delete-orphan"
+    )
 
 
 class Crop(Base):
@@ -133,6 +136,24 @@ class Recommendation(Base):
     created_at = Column(DateTime, default=func.now())
 
     farm = relationship("Farm", back_populates="recommendations")
+
+
+class HealthScoreSnapshot(Base):
+    """Point-in-time health score — persisted per intelligence call for trend charts."""
+
+    __tablename__ = "health_score_snapshots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
+    overall = Column(Integer, nullable=False)
+    vegetation = Column(Integer, nullable=True)
+    water = Column(Integer, nullable=True)
+    weather = Column(Integer, nullable=True)
+    pest_risk = Column(Integer, nullable=True)
+    climate = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+
+    farm = relationship("Farm", back_populates="score_snapshots")
 
 
 class Alert(Base):

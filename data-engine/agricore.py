@@ -180,11 +180,20 @@ RULES:
    any uncertainties.
 4. Recommendations must be actionable (e.g. "Consider irrigation within 24–48 hours").
 5. Use simple language understandable by a farmer.
+6. When grounding data from the farm's own recorded history is provided, cite its
+   concrete numbers (dates, scores, °C, mm, forecasts) so the advice is
+   verifiable and farm-specific.
 """
 
 
-async def generate_recommendation(ctx: FarmContext, health: FarmHealthScore) -> Recommendation:
+async def generate_recommendation(
+    ctx: FarmContext, health: FarmHealthScore, grounding: str | None = None
+) -> Recommendation:
     """Use Gemini (google-genai SDK) to generate a data-grounded recommendation.
+
+    `grounding` carries the farm's own recorded history (past observations,
+    alerts, previous advice, and the local ML score forecast) so the
+    recommendation is authentic and farm-specific.
 
     Falls back to the rule-based engine when no API key is configured or the
     SDK is unavailable.
@@ -201,6 +210,15 @@ async def generate_recommendation(ctx: FarmContext, health: FarmHealthScore) -> 
 
     client = genai.Client(api_key=api_key)
     model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+
+    grounding_block = ""
+    if grounding:
+        grounding_block = (
+            "Grounding Data (this farm's own recorded history, recent alerts, "
+            "previous advice, and a locally-trained ML forecast — use it to make "
+            "the advice specific and authentic; cite concrete numbers when relevant):\n"
+            f"{grounding}\n\n"
+        )
 
     prompt = f"""Analyze the following farm data and provide a recommendation.
 
@@ -220,7 +238,7 @@ Farm Context:
 - Historical Mean Temperature (same month last year, NASA POWER): {ctx.historical_mean_temp_c if ctx.historical_mean_temp_c is not None else 'N/A'}°C
 - Humidity Anomaly vs. Historical: {ctx.humidity_anomaly_pct if ctx.humidity_anomaly_pct is not None else 'N/A'}%
 
-Farm Health Score: {health.overall}/100
+{grounding_block}Farm Health Score: {health.overall}/100
 - Vegetation: {health.vegetation}
 - Water: {health.water}
 - Weather: {health.weather}

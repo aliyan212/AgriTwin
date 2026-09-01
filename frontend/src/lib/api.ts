@@ -126,6 +126,12 @@ export interface FarmIntelligence {
     soil_moisture_m3m3: number | null;
     soil_temperature_c: number | null;
     et0_mm: number | null;
+    air_quality?: {
+      pm2_5: number | null;
+      pm10: number | null;
+      source: string;
+      updated_at?: string | null;
+    } | null;
     source: string;
     observed_at: string;
   };
@@ -136,6 +142,15 @@ export interface FarmIntelligence {
     rain_mm: number | null;
     et0_mm: number | null;
   }[];
+  score_forecast?: { date: string; predicted_score: number }[] | null;
+  ml?: {
+    trained_at: string;
+    samples: number;
+    observed_samples: number;
+    trained_on: string;
+    fit_r2: number;
+    feature_importances?: Record<string, number>;
+  } | null;
   satellite: {
     ndvi: number | null;
     ndvi_change: number | null;
@@ -174,7 +189,55 @@ export interface FarmIntelligence {
   };
 }
 
-// ── Auth types ──────────────────────────────────────────────────────────────
+// ── Farm history types (digital twin timeline) ──────────────────────────
+export interface ScoreSnapshot {
+  timestamp: string | null;
+  overall: number;
+  vegetation: number | null;
+  water: number | null;
+  weather: number | null;
+  pest_risk: number | null;
+  climate: number | null;
+}
+
+export interface WeatherObservation {
+  timestamp: string | null;
+  temperature_c: number | null;
+  humidity_pct: number | null;
+  rainfall_mm: number | null;
+  wind_speed_kmh: number | null;
+  cloud_cover_pct: number | null;
+}
+
+export interface HistoryAlert {
+  id: number;
+  severity: string;
+  category: string;
+  title: string;
+  description: string;
+  recommendation: string | null;
+  created_at: string | null;
+}
+
+export interface HistoryRecommendation {
+  id: number;
+  text: string;
+  reason: string | null;
+  confidence: number | null;
+  risk_level: string | null;
+  created_at: string | null;
+}
+
+export interface FarmHistory {
+  farm: { id: number; name: string; district: string | null; province: string };
+  scores: ScoreSnapshot[];
+  weather: WeatherObservation[];
+  ndvi: { date: string | null; ndvi: number | null }[];
+  alerts: HistoryAlert[];
+  recommendations: HistoryRecommendation[];
+}
+
+// ── Auth types ────────────────────────────────────────────────────────────────
 export interface AuthUser {
   id: number;
   name: string;
@@ -243,6 +306,8 @@ export const api = {
       `/analytics/forecast-chart/${farmId}?days=${days}`
     ),
   getCropKnowledge: () => request<CropKnowledge[]>("/analytics/crops/knowledge"),
+  getFarmHistory: (farmId: number) =>
+    request<FarmHistory>(`/analytics/history/${farmId}`),
 
   // Health
   healthCheck: () => request<{ status: string }>("/health").catch(() => ({ status: "offline" })),

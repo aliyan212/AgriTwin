@@ -17,7 +17,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Alert, Crop, Farm, Recommendation as RecModel, WeatherRecord
+from app.models import (
+    Alert,
+    Crop,
+    Farm,
+    HealthScoreSnapshot,
+    Recommendation as RecModel,
+    WeatherRecord,
+)
+from app.services.ml_engine import load_or_train, predict_forecast
 from app.services.ndvi_cache import get_ndvi_series_cached
 from app.services.weather_service import weather_service
 
@@ -119,9 +127,22 @@ def _persist_recommendation(farm_id: int, rec, db: Session):
 
 
 def _persist_alerts(farm_id: int, alert_list, db: Session):
-    """Save detected alerts to the database."""
+    """Save detected alerts, skipping duplicates raised within the last 24 hours."""
+    if not alert_list:
+        return
+    since = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+    recent = {
+        (a.category, a.severity, a.title)
+        for a in db.query(Alert)
+        .filter(Alert.farm_id == farm_id, Alert.created_at >= since)
+        .all()
+    }
+    added = False
     for a in alert_list:
-        db_alert = Alert(
+        key = (a.category, a.severity, a.title)
+        if key in recent:
+            continue
+        db.add(Alert(
             farm_id=farm_id,
             severity=a.severity,
             category=a.category,
@@ -129,9 +150,130 @@ def _persist_alerts(farm_id: int, alert_list, db: Session):
             description=a.description,
             evidence=json.dumps(a.evidence),
             recommendation=a.recommendation,
-        )
-        db.add(db_alert)
+        ))
+        recent.add(key)
+        added = True
+    if added:
+        db.commit()
+
+
+def _persist_score_snapshot(farm_id: int, score, db: Session):
+    """Save a health-score snapshot (at most one per hour unless the score changes)."""
+    latest = (
+        db.query(HealthScoreSnapshot)
+        .filter(HealthScoreSnapshot.farm_id == farm_id)
+        .order_by(HealthScoreSnapshot.created_at.desc())
+        .first()
+    )
+    if latest:
+        fresh = (datetime.datetime.utcnow() - latest.created_at).total_seconds() < 3600
+        if fresh and latest.overall == score.overall:
+            return
+    db.add(HealthScoreSnapshot(
+        farm_id=farm_id,
+        overall=score.overall,
+        vegetation=score.vegetation,
+        water=score.water,
+        weather=score.weather,
+        pest_risk=score.pest_risk,
+        climate=score.climate,
+    ))
     db.commit()
+
+
+def _build_grounding(
+    db: Session,
+    farm_id: int,
+    score,
+    ndvi_series: list[dict],
+    score_forecast: list[dict],
+    ml_meta: dict | None,
+    air_quality: dict | None,
+) -> str | None:
+    """Compact summary of this farm's own recorded history to ground the AI —
+    past observations, alerts, previous advice, ML forecast, air quality."""
+    now = datetime.datetime.utcnow()
+    since = now - datetime.timedelta(days=7)
+    lines = []
+
+    obs = (
+        db.query(WeatherRecord)
+        .filter(WeatherRecord.farm_id == farm_id, WeatherRecord.timestamp >= since)
+        .all()
+    )
+    if obs:
+        temps = [o.temperature_c for o in obs if o.temperature_c is not None]
+        rains = [o.rainfall_mm for o in obs if o.rainfall_mm is not None]
+        parts = [f"{len(obs)} observations recorded in the last 7 days"]
+        if temps:
+            parts.append(
+                f"avg temp {sum(temps) / len(temps):.1f}°C (min {min(temps):.1f}, max {max(temps):.1f})"
+            )
+        if rains:
+            parts.append(f"total rain {sum(rains):.1f} mm")
+        lines.append("LOCAL FARM HISTORY: " + "; ".join(parts))
+
+    if len(ndvi_series) >= 2:
+        first, last = ndvi_series[0], ndvi_series[-1]
+        lines.append(
+            f"NDVI 12-MONTH TREND (MODIS): latest {last['ndvi']:.3f}, "
+            f"12 months ago {first['ndvi']:.3f} (change {last['ndvi'] - first['ndvi']:+.3f})"
+        )
+
+    recent_alerts = (
+        db.query(Alert)
+        .filter(Alert.farm_id == farm_id)
+        .order_by(Alert.created_at.desc())
+        .limit(3)
+        .all()
+    )
+    if recent_alerts:
+        lines.append(
+            "RECENT ALERTS RAISED FOR THIS FARM: "
+            + "; ".join(f"[{a.severity}] {a.title}" for a in recent_alerts)
+        )
+
+    last_rec = (
+        db.query(RecModel)
+        .filter(RecModel.farm_id == farm_id)
+        .order_by(RecModel.created_at.desc())
+        .first()
+    )
+    if last_rec:
+        age_days = (now - last_rec.created_at).days if last_rec.created_at else 0
+        lines.append(
+            f"PREVIOUS ADVICE ({age_days} day(s) ago, current score {score.overall}/100): "
+            f"{last_rec.recommendation_text[:160]}"
+        )
+
+    if score_forecast and ml_meta:
+        trend = ", ".join(f"{f['date']}: {f['predicted_score']}" for f in score_forecast)
+        lines.append(
+            f"7-DAY ML SCORE FORECAST (random forest trained on {ml_meta['samples']} local "
+            f"observations, {ml_meta['trained_on']}, fit R² {ml_meta['fit_r2']}): {trend}"
+        )
+
+    if air_quality:
+        lines.append(
+            f"REAL-TIME AIR QUALITY: PM2.5 {air_quality.get('pm2_5')} µg/m³, "
+            f"PM10 {air_quality.get('pm10')} µg/m³ (Open-Meteo / CAMS)"
+        )
+
+    return "\n".join(lines) if lines else None
+
+
+def _public_ml_meta(meta: dict | None) -> dict | None:
+    """Whitelist of model metadata safe/interesting for the API response."""
+    if not meta:
+        return None
+    return {
+        "trained_at": meta.get("trained_at"),
+        "samples": meta.get("samples"),
+        "observed_samples": meta.get("observed_samples"),
+        "trained_on": meta.get("trained_on"),
+        "fit_r2": meta.get("fit_r2"),
+        "feature_importances": meta.get("feature_importances"),
+    }
 
 
 # ── Intelligence Endpoint ────────────────────────────────────────────────────
@@ -158,11 +300,14 @@ async def get_farm_intelligence(farm_id: int, db: Session = Depends(get_db)):
     current = current_data.get("current", {})
     daily = forecast_data.get("daily", {})
 
-    # NASA POWER climate anomaly (needs current temp/humidity → after weather)
-    climate_anomaly = await weather_service.get_climate_anomaly(
-        farm.latitude, farm.longitude,
-        current_temp=current.get("temperature_2m"),
-        current_humidity=current.get("relative_humidity_2m"),
+    # NASA POWER climate anomaly + real-time air quality (after weather, in parallel)
+    climate_anomaly, air_quality = await asyncio.gather(
+        weather_service.get_climate_anomaly(
+            farm.latitude, farm.longitude,
+            current_temp=current.get("temperature_2m"),
+            current_humidity=current.get("relative_humidity_2m"),
+        ),
+        weather_service.get_air_quality(farm.latitude, farm.longitude),
     )
 
     # Persist observations
@@ -173,13 +318,21 @@ async def get_farm_intelligence(farm_id: int, db: Session = Depends(get_db)):
 
     # Health score
     score = agricore.compute_health_score(ctx)
+    _persist_score_snapshot(farm_id, score, db)
+
+    # Local ML model — trained on this farm's accumulated observations
+    model, ml_meta = load_or_train(db, farm_id, climate_anomaly)
+    score_forecast = predict_forecast(model, ml_meta, daily)
+
+    # Ground the AI recommendation in the farm's own history + ML forecast
+    grounding = _build_grounding(db, farm_id, score, ndvi_series, score_forecast, ml_meta, air_quality)
 
     # Alerts
     active_alerts = alert_engine.detect_alerts(ctx, score)
     _persist_alerts(farm_id, active_alerts, db)
 
     # Recommendation (Gemini when configured, rule-based fallback otherwise)
-    rec = await agricore.generate_recommendation(ctx, score)
+    rec = await agricore.generate_recommendation(ctx, score, grounding=grounding)
     _persist_recommendation(farm_id, rec, db)
 
     # Most recent crop
@@ -226,10 +379,13 @@ async def get_farm_intelligence(farm_id: int, db: Session = Depends(get_db)):
             "soil_moisture_m3m3": ctx.soil_moisture_m3m3,
             "soil_temperature_c": ctx.soil_temperature_c,
             "et0_mm": ctx.et0_mm,
+            "air_quality": air_quality,
             "source": "Open-Meteo",
             "observed_at": now.isoformat(),
         },
         "forecast": forecast_summary,
+        "score_forecast": score_forecast,
+        "ml": _public_ml_meta(ml_meta),
         "satellite": {
             "ndvi": ctx.ndvi,
             "ndvi_change": ctx.ndvi_change,
@@ -284,7 +440,7 @@ async def get_farm_intelligence(farm_id: int, db: Session = Depends(get_db)):
             "weather_retrieved_at": now.isoformat(),
             "satellite_source": MODIS_SOURCE if ctx.ndvi is not None else "Not available",
             "climate_source": "NASA POWER (MERRA-2)" if climate_anomaly else "Not available",
-            "score_engine": "AgriCore v0.1",
+            "score_engine": "AgriCore v0.1 + local ML (random forest)" if ml_meta else "AgriCore v0.1",
             "crop_knowledge": "Punjab Agriculture Department",
         },
     }

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     # External APIs
     OPEN_METEO_BASE_URL: str = "https://api.open-meteo.com/v1"
+    OPEN_METEO_AIR_QUALITY_URL: str = "https://air-quality-api.open-meteo.com/v1"
     NASA_POWER_BASE_URL: str = "https://power.larc.nasa.gov/api/temporal"
     MODIS_BASE_URL: str = "https://modis.ornl.gov/rst/api/v1"
     SENTINEL_HUB_BASE_URL: str = "https://services.sentinel-hub.com"

@@ -6,7 +6,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Crop, Farm, Recommendation
+from app.models import (
+    Alert,
+    Crop,
+    Farm,
+    HealthScoreSnapshot,
+    Recommendation,
+    SatelliteObservation,
+    WeatherRecord,
+)
 from app.schemas import RecommendationResponse
 from app.services.weather_service import weather_service
 
@@ -179,6 +187,120 @@ def get_crop_knowledge():
             "common_pests": entry["common_pests"],
         })
     return crops
+
+
+# ── Farm History (digital twin timeline) ────────────────────────────────────
+@router.get("/history/{farm_id}")
+def get_farm_history(farm_id: int, db: Session = Depends(get_db)):
+    """Historical record for a farm: score snapshots, weather observations,
+    NDVI series, alerts and recommendations (most recent first for lists)."""
+    farm = db.query(Farm).get(farm_id)
+    if not farm:
+        raise HTTPException(status_code=404, detail="Farm not found")
+
+    # Score snapshots — chronological, most recent 200
+    scores = (
+        db.query(HealthScoreSnapshot)
+        .filter(HealthScoreSnapshot.farm_id == farm_id)
+        .order_by(HealthScoreSnapshot.created_at.desc())
+        .limit(200)
+        .all()
+    )[::-1]
+
+    # Weather observations — chronological, most recent 500
+    weather = (
+        db.query(WeatherRecord)
+        .filter(WeatherRecord.farm_id == farm_id)
+        .order_by(WeatherRecord.timestamp.desc())
+        .limit(500)
+        .all()
+    )[::-1]
+
+    # NDVI observations — chronological, most recent 100
+    ndvi = (
+        db.query(SatelliteObservation)
+        .filter(SatelliteObservation.farm_id == farm_id)
+        .order_by(SatelliteObservation.date.desc())
+        .limit(100)
+        .all()
+    )[::-1]
+
+    # Alerts — newest first, most recent 50
+    alerts = (
+        db.query(Alert)
+        .filter(Alert.farm_id == farm_id)
+        .order_by(Alert.created_at.desc())
+        .limit(50)
+        .all()
+    )
+
+    # Recommendations — newest first, most recent 20
+    recs = (
+        db.query(Recommendation)
+        .filter(Recommendation.farm_id == farm_id)
+        .order_by(Recommendation.created_at.desc())
+        .limit(20)
+        .all()
+    )
+
+    return {
+        "farm": {
+            "id": farm.id,
+            "name": farm.name,
+            "district": farm.district,
+            "province": farm.province,
+        },
+        "scores": [
+            {
+                "timestamp": s.created_at.isoformat() if s.created_at else None,
+                "overall": s.overall,
+                "vegetation": s.vegetation,
+                "water": s.water,
+                "weather": s.weather,
+                "pest_risk": s.pest_risk,
+                "climate": s.climate,
+            }
+            for s in scores
+        ],
+        "weather": [
+            {
+                "timestamp": w.timestamp.isoformat() if w.timestamp else None,
+                "temperature_c": w.temperature_c,
+                "humidity_pct": w.humidity_pct,
+                "rainfall_mm": w.rainfall_mm,
+                "wind_speed_kmh": w.wind_speed_kmh,
+                "cloud_cover_pct": w.cloud_cover_pct,
+            }
+            for w in weather
+        ],
+        "ndvi": [
+            {"date": n.date.date().isoformat() if n.date else None, "ndvi": n.ndvi}
+            for n in ndvi
+        ],
+        "alerts": [
+            {
+                "id": a.id,
+                "severity": a.severity,
+                "category": a.category,
+                "title": a.title,
+                "description": a.description,
+                "recommendation": a.recommendation,
+                "created_at": a.created_at.isoformat() if a.created_at else None,
+            }
+            for a in alerts
+        ],
+        "recommendations": [
+            {
+                "id": r.id,
+                "text": r.recommendation_text,
+                "reason": r.reason,
+                "confidence": r.confidence,
+                "risk_level": r.risk_level,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in recs
+        ],
+    }
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
