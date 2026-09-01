@@ -1,0 +1,26 @@
+# AgriTwin AI — Docker Compose for local development
+# Provides PostgreSQL + PostGIS. Run: docker compose up -d
+
+services:
+  # ── PostgreSQL + PostGIS ──────────────────────────────────────────────────────
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: agritwin-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agritwin
+      POSTGRES_PASSWORD: agritwin_dev
+      POSTGRES_DB: agritwin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agritwin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
