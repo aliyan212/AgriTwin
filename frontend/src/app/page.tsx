@@ -279,6 +279,10 @@ export default function DashboardPage() {
         setNdviSource(null);
       })
       .finally(() => setNdviLoading(false));
+
+    // Pre-fetch Warabandi canal schedule & Soil physics immediately in background
+    api.getWarabandiAdvice(farmId).catch(() => {});
+    api.getSoilPhysics(farmId).catch(() => {});
   }, [selectedFarm]);
 
   // ── Generate recommendation on demand ────────────────────────────────────

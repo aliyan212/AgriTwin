@@ -18,6 +18,7 @@ SOILGRIDS_API_URL = "https://rest.isric.org/soilgrids/v2.0/properties/query"
 
 # Local in-memory cache for coordinates rounded to 3 decimals (~100m)
 _SOIL_CACHE: dict[str, dict[str, Any]] = {}
+_EVALUATED_SOIL_CACHE: dict[str, SoilHydraulicProperties] = {}
 
 
 @dataclass
@@ -169,7 +170,7 @@ async def fetch_isric_soilgrids(lat: float, lon: float) -> dict[str, float] | No
     }
 
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=1.2) as client:
             resp = await client.get(SOILGRIDS_API_URL, params=params)
             if resp.status_code != 200:
                 return None
@@ -255,6 +256,10 @@ async def evaluate_soil_physics(
     lon: float | None = None,
 ) -> SoilHydraulicProperties:
     """Fetch or infer soil texture and calculate Saxton-Rawls soil hydraulics."""
+    cache_key = f"{round(lat, 3) if lat is not None else 30.8}_{round(lon, 3) if lon is not None else 73.4}"
+    if cache_key in _EVALUATED_SOIL_CACHE:
+        return _EVALUATED_SOIL_CACHE[cache_key]
+
     data = None
     source = "isric_soilgrids_250m"
 
@@ -273,7 +278,7 @@ async def evaluate_soil_physics(
     hydraulics = compute_saxton_rawls_hydraulics(sand, clay, om)
     usda_name, punjabi_name = classify_usda_texture(sand, silt, clay)
 
-    return SoilHydraulicProperties(
+    props = SoilHydraulicProperties(
         clay_pct=clay,
         sand_pct=sand,
         silt_pct=silt,
@@ -288,3 +293,5 @@ async def evaluate_soil_physics(
         punjabi_texture=punjabi_name,
         data_source=source,
     )
+    _EVALUATED_SOIL_CACHE[cache_key] = props
+    return props
