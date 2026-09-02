@@ -106,6 +106,39 @@ class WarabandiAdviceResponse(BaseModel):
     reasoning_ur: str
 
 
+class SoilPhysicsResponse(BaseModel):
+    farm_id: int
+    clay_pct: float
+    sand_pct: float
+    silt_pct: float
+    organic_matter_pct: float
+    field_capacity_m3m3: float
+    wilting_point_m3m3: float
+    saturation_m3m3: float
+    available_water_capacity_mm_m: float
+    available_water_capacity_in_ft: float
+    ksat_mm_hr: float
+    usda_texture: str
+    punjabi_texture: str
+    data_source: str
+
+
+class CropPhenologyGDDResponse(BaseModel):
+    farm_id: int
+    crop_name: str
+    stage_name: str
+    stage_name_ur: str
+    accumulated_gdd: float
+    stage_target_gdd: float
+    stage_progress_pct: float
+    total_crop_gdd: float
+    crop_progress_pct: float
+    current_kc: float
+    heat_stress_alert: bool
+    heat_stress_message_en: str
+    heat_stress_message_ur: str
+
+
 # ── Crop ──────────────────────────────────────────────────────────────────────
 class CropCreate(BaseModel):
     crop_name: str

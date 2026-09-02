@@ -207,6 +207,8 @@ def evaluate_warabandi_irrigation(
     current_soil_moisture: float = 0.22,  # m3/m3
     et0_mm: float = 4.0,                 # mm/day
     forecast_rain_48h_mm: float = 0.0,
+    field_capacity: float = 0.32,
+    wilting_point: float = 0.13,
     reference_dt: datetime.datetime | None = None,
 ) -> dict[str, Any]:
     """Evaluate crop water balance, upcoming canal turn, and diesel cost savings."""
@@ -220,8 +222,9 @@ def evaluate_warabandi_irrigation(
     seven_day_demand_mm = daily_etc_mm * 7.0
 
     # Convert mm to acre-inches (1 inch = 25.4 mm)
-    # Adjust for soil moisture depletion (wilting point approx 0.12, field capacity 0.35)
-    moisture_deficit_factor = max(0.4, min(1.6, (0.32 - current_soil_moisture) / 0.15))
+    # Dynamic soil moisture depletion using field-specific Saxton-Rawls parameters
+    awc = max(0.08, field_capacity - wilting_point)
+    moisture_deficit_factor = max(0.4, min(1.6, (field_capacity - current_soil_moisture) / awc))
     water_demand_inches = round((seven_day_demand_mm / 25.4) * moisture_deficit_factor, 1)
     water_demand_inches = max(1.0, min(5.0, water_demand_inches))
 

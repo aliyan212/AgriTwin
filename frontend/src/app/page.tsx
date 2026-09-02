@@ -22,6 +22,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import LazyCard from "@/components/LazyCard";
 import SkeletonCard from "@/components/SkeletonCard";
 import WarabandiAdvisor from "@/components/WarabandiAdvisor";
+import SoilPhysicsCard from "@/components/SoilPhysicsCard";
 import { useLanguage } from "@/components/LanguageProvider";
 
 // Dynamic import prevents SSR issues with Leaflet
@@ -748,9 +749,14 @@ export default function DashboardPage() {
 
       {/* ── Warabandi Canal Water & Tubewell Energy Optimizer ───────────── */}
       {selectedFarm && (
-        <LazyCard delayMs={75} className="mt-6">
-          <WarabandiAdvisor farmId={selectedFarm.id} />
-        </LazyCard>
+        <>
+          <LazyCard delayMs={75} className="mt-6">
+            <WarabandiAdvisor farmId={selectedFarm.id} />
+          </LazyCard>
+          <LazyCard delayMs={85} className="mt-6">
+            <SoilPhysicsCard farmId={selectedFarm.id} />
+          </LazyCard>
+        </>
       )}
 
       {/* ── Second Row: Agrometeorology & 7-Day Forecast ────────────────────── */}

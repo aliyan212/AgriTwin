@@ -304,6 +304,39 @@ export interface WarabandiAdvice {
   reasoning_ur: string;
 }
 
+export interface SoilPhysicsData {
+  farm_id: number;
+  clay_pct: number;
+  sand_pct: number;
+  silt_pct: number;
+  organic_matter_pct: number;
+  field_capacity_m3m3: number;
+  wilting_point_m3m3: number;
+  saturation_m3m3: number;
+  available_water_capacity_mm_m: number;
+  available_water_capacity_in_ft: number;
+  ksat_mm_hr: number;
+  usda_texture: string;
+  punjabi_texture: string;
+  data_source: string;
+}
+
+export interface CropPhenologyGddData {
+  farm_id: number;
+  crop_name: string;
+  stage_name: string;
+  stage_name_ur: string;
+  accumulated_gdd: number;
+  stage_target_gdd: number;
+  stage_progress_pct: number;
+  total_crop_gdd: number;
+  crop_progress_pct: number;
+  current_kc: number;
+  heat_stress_alert: boolean;
+  heat_stress_message_en: string;
+  heat_stress_message_ur: string;
+}
+
 // ── Farms ────────────────────────────────────────────────────────────────────
 export const api = {
   // Farms
@@ -385,6 +418,10 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(config),
     }),
+  getSoilPhysics: (farmId: number) =>
+    request<SoilPhysicsData>(`/analytics/soil-physics/${farmId}`),
+  getPhenologyGdd: (farmId: number) =>
+    request<CropPhenologyGddData>(`/analytics/phenology-gdd/${farmId}`),
 
   // Health
   healthCheck: () => request<{ status: string }>("/health").catch(() => ({ status: "offline" })),

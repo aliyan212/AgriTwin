@@ -16,12 +16,20 @@ from app.models import (
     SoilObservation,
     WeatherRecord,
 )
-from app.schemas import RecommendationResponse, WarabandiAdviceResponse, WarabandiConfigUpdate
+from app.schemas import (
+    CropPhenologyGDDResponse,
+    RecommendationResponse,
+    SoilPhysicsResponse,
+    WarabandiAdviceResponse,
+    WarabandiConfigUpdate,
+)
 from app.services.weather_service import weather_service
 
 # AgriCore imports (from data-engine directory, added to sys.path in main.py)
 import agricore
 import crop_knowledge
+import phenology_gdd
+import soil_engine
 import warabandi_engine
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -358,6 +366,9 @@ async def get_warabandi_advice(farm_id: int, db: Session = Depends(get_db)):
         if latest_soil and latest_soil.soil_moisture_m3m3 is not None:
             soil_moisture = latest_soil.soil_moisture_m3m3
 
+    # Dynamic soil physics (ISRIC SoilGrids 250m + Saxton-Rawls)
+    soil_props = await soil_engine.evaluate_soil_physics(farm.latitude, farm.longitude)
+
     advice = warabandi_engine.evaluate_warabandi_irrigation(
         farm_id=farm.id,
         farm_name=farm.name,
@@ -378,6 +389,8 @@ async def get_warabandi_advice(farm_id: int, db: Session = Depends(get_db)):
         current_soil_moisture=soil_moisture,
         et0_mm=et0_val,
         forecast_rain_48h_mm=rain_48h,
+        field_capacity=soil_props.field_capacity_m3m3,
+        wilting_point=soil_props.wilting_point_m3m3,
     )
     return advice
 
@@ -407,4 +420,80 @@ async def update_warabandi_config(
     db.refresh(farm)
 
     return await get_warabandi_advice(farm_id, db)
+
+
+@router.get("/soil-physics/{farm_id}", response_model=SoilPhysicsResponse)
+async def get_farm_soil_physics(farm_id: int, db: Session = Depends(get_db)):
+    """Fetch 250m resolution ISRIC SoilGrids texture & Saxton-Rawls hydraulic properties."""
+    farm = _get_farm_or_404(db, farm_id)
+    props = await soil_engine.evaluate_soil_physics(farm.latitude, farm.longitude)
+    return SoilPhysicsResponse(
+        farm_id=farm.id,
+        clay_pct=props.clay_pct,
+        sand_pct=props.sand_pct,
+        silt_pct=props.silt_pct,
+        organic_matter_pct=props.organic_matter_pct,
+        field_capacity_m3m3=props.field_capacity_m3m3,
+        wilting_point_m3m3=props.wilting_point_m3m3,
+        saturation_m3m3=props.saturation_m3m3,
+        available_water_capacity_mm_m=props.available_water_capacity_mm_m,
+        available_water_capacity_in_ft=props.available_water_capacity_in_ft,
+        ksat_mm_hr=props.ksat_mm_hr,
+        usda_texture=props.usda_texture,
+        punjabi_texture=props.punjabi_texture,
+        data_source=props.data_source,
+    )
+
+
+@router.get("/phenology-gdd/{farm_id}", response_model=CropPhenologyGDDResponse)
+async def get_farm_phenology_gdd(farm_id: int, db: Session = Depends(get_db)):
+    """Calculate Growing Degree Days (GDD) thermal accumulation and phenological progress."""
+    farm = _get_farm_or_404(db, farm_id)
+    latest_crop = (
+        db.query(Crop)
+        .filter(Crop.farm_id == farm.id)
+        .order_by(Crop.id.desc())
+        .first()
+    )
+    crop_name = latest_crop.crop_name if latest_crop else "Wheat"
+    sowing_date = latest_crop.sowing_date if latest_crop else None
+
+    # Fetch current max/min temp from weather service if available
+    t_max, t_min = 28.0, 16.0
+    try:
+        if farm.latitude and farm.longitude:
+            forecast = await weather_service.get_forecast_open_meteo(
+                farm.latitude, farm.longitude, forecast_days=1
+            )
+            daily = forecast.get("daily", {})
+            t_max_list = daily.get("temperature_2m_max", [])
+            t_min_list = daily.get("temperature_2m_min", [])
+            if t_max_list and t_min_list:
+                t_max = float(t_max_list[0])
+                t_min = float(t_min_list[0])
+    except Exception:
+        pass
+
+    report = phenology_gdd.evaluate_thermal_phenology(
+        crop_name=crop_name,
+        sowing_date=sowing_date,
+        current_tmax=t_max,
+        current_tmin=t_min,
+    )
+
+    return CropPhenologyGDDResponse(
+        farm_id=farm.id,
+        crop_name=report.crop_name,
+        stage_name=report.stage_name,
+        stage_name_ur=report.stage_name_ur,
+        accumulated_gdd=report.accumulated_gdd,
+        stage_target_gdd=report.stage_target_gdd,
+        stage_progress_pct=report.stage_progress_pct,
+        total_crop_gdd=report.total_crop_gdd,
+        crop_progress_pct=report.crop_progress_pct,
+        current_kc=report.current_kc,
+        heat_stress_alert=report.heat_stress_alert,
+        heat_stress_message_en=report.heat_stress_message_en,
+        heat_stress_message_ur=report.heat_stress_message_ur,
+    )
 

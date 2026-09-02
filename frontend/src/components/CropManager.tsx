@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, type Crop, type CropKnowledge } from "@/lib/api";
+import { api, type Crop, type CropKnowledge, type CropPhenologyGddData } from "@/lib/api";
 import Icon from "@/components/Icon";
 import { useLanguage } from "./LanguageProvider";
 import { getLocalizedCropName, getLocalizedStageName } from "@/lib/translations";
@@ -102,6 +102,7 @@ export default function CropManager({ farmId, onCropAdded }: CropManagerProps) {
   const [crops, setCrops] = useState<Crop[]>([]);
   const [knowledge, setKnowledge] = useState<CropKnowledge[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [gddData, setGddData] = useState<CropPhenologyGddData | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Add form state
@@ -109,15 +110,17 @@ export default function CropManager({ farmId, onCropAdded }: CropManagerProps) {
   const [selectedSeason, setSelectedSeason] = useState("");
   const [sowingDate, setSowingDate] = useState("");
 
-  // Load crops + knowledge
+  // Load crops + knowledge + thermal phenology
   useEffect(() => {
     setLoading(true);
     Promise.all([
       api.listCrops(farmId).catch(() => []),
       api.getCropKnowledge().catch(() => []),
-    ]).then(([c, k]) => {
+      api.getPhenologyGdd(farmId).catch(() => null),
+    ]).then(([c, k, gdd]) => {
       setCrops(c);
       setKnowledge(k);
+      setGddData(gdd);
       if (k.length > 0) {
         setSelectedCrop(k[0].name);
         setSelectedSeason(k[0].season);
@@ -285,6 +288,37 @@ export default function CropManager({ farmId, onCropAdded }: CropManagerProps) {
                   );
                 })}
               </div>
+
+              {/* Thermal Time (GDD) & Heat Stress Banner */}
+              {gddData && (
+                <div className="mt-3 pt-3 border-t border-ink/8 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
+                    <span className="text-dim flex items-center gap-1.5">
+                      <Icon name="sun" size={13} className="text-amber-400" />
+                      <span>{isUrdu ? "تھرمل یونٹس (GDD)" : "Thermal Time (GDD)"}:</span>
+                      <strong className="text-ink">{gddData.accumulated_gdd}</strong> / {gddData.total_crop_gdd} GDD
+                    </span>
+                    <span className="text-brand font-semibold">
+                      Kc: {gddData.current_kc} &middot; {gddData.crop_progress_pct}% {isUrdu ? "مجموعی پکائی" : "Maturity"}
+                    </span>
+                  </div>
+
+                  {/* Heat Stress Alert if triggered */}
+                  {gddData.heat_stress_alert && (
+                    <div className="flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-2.5 text-xs text-rose-300 animate-pulse">
+                      <Icon name="alert" size={15} className="text-rose-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-rose-400">
+                          {isUrdu ? "شدید گرمی دا خطرہ (Terminal Heat Stress)" : "Terminal Heat Stress Warning"}
+                        </p>
+                        <p className="text-[11px] text-rose-200/90 mt-0.5">
+                          {isUrdu ? gddData.heat_stress_message_ur : gddData.heat_stress_message_en}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : (
