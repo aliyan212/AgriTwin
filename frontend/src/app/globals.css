@@ -1,5 +1,8 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* Ensure Tailwind v4 dark: variants strictly follow the .dark class on <html> instead of OS media query */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -18,8 +21,12 @@
   --color-brand-dark: var(--brand-dark);
 }
 
-:root {
+:root,
+html.light {
   /* ── Light Theme (Pastel, Modern) ────────────────────────────────── */
+  --abyss-rgb: 240, 244, 242;
+  --panel-rgb: 255, 255, 255;
+  --ink-rgb: 26, 41, 34;
   --abyss: #f0f4f2;
   --panel: #ffffff;
   --edge: #e2e8e4;
@@ -30,20 +37,25 @@
   --brand-light: #34d399;
   --brand-dark: #059669;
 
-  --glass-border: rgba(0, 0, 0, 0.06);
-  --glass-bg: linear-gradient(165deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.2));
-  --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  --glass-card-border: rgba(0, 0, 0, 0.05);
-  --glass-card-bg1: rgba(255, 255, 255, 0.5);
-  --glass-card-bg2: rgba(255, 255, 255, 0.1);
-  --glass-card-hover-border: rgba(52, 211, 153, 0.4);
-  --glass-card-hover-bg1: rgba(255, 255, 255, 0.7);
-  --glass-card-hover-bg2: rgba(255, 255, 255, 0.3);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --glass-card-border: rgba(0, 0, 0, 0.07);
+  --glass-card-bg1: rgba(255, 255, 255, 0.95);
+  --glass-card-bg2: rgba(246, 250, 248, 0.9);
+  --glass-card-hover-border: rgba(52, 211, 153, 0.45);
+  --glass-card-hover-bg1: rgba(255, 255, 255, 0.98);
+  --glass-card-hover-bg2: rgba(242, 246, 244, 0.94);
   color-scheme: light;
 }
 
-:root.dark {
+:root.dark,
+html.dark,
+.dark {
   /* ── Dark Theme (Original) ─────────────────────────────────────── */
+  --abyss-rgb: 5, 9, 10;
+  --panel-rgb: 11, 18, 16;
+  --ink-rgb: 236, 245, 239;
   --abyss: #05090a;
   --panel: #0b1210;
   --edge: #1c2b23;
@@ -54,20 +66,17 @@
   --brand-light: #6ee7b7;
   --brand-dark: #059669;
 
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-bg: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
-  --glass-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  --glass-card-border: rgba(255, 255, 255, 0.07);
-  --glass-card-bg1: rgba(255, 255, 255, 0.04);
-  --glass-card-bg2: rgba(255, 255, 255, 0.01);
-  --glass-card-hover-border: rgba(52, 211, 153, 0.35);
-  --glass-card-hover-bg1: rgba(255, 255, 255, 0.07);
-  --glass-card-hover-bg2: rgba(255, 255, 255, 0.02);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(11, 18, 16, 0.92);
+  --glass-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --glass-card-border: rgba(255, 255, 255, 0.08);
+  --glass-card-bg1: rgba(14, 22, 19, 0.92);
+  --glass-card-bg2: rgba(9, 15, 13, 0.88);
+  --glass-card-hover-border: rgba(52, 211, 153, 0.4);
+  --glass-card-hover-bg1: rgba(18, 28, 24, 0.94);
+  --glass-card-hover-bg2: rgba(11, 18, 15, 0.9);
   color-scheme: dark;
 }
-
-
-
 
 /* ── Reusable surfaces ─────────────────────────────────────────────── */
 @utility glass-panel {
@@ -75,20 +84,15 @@
   border-radius: 1rem;
   background: var(--glass-bg);
   box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
-
-
-
-
-
-
-/* ── Reusable surfaces ─────────────────────────────────────────────── */
 
 @utility glass-card {
   border: 1px solid var(--glass-card-border);
   border-radius: 0.875rem;
   background: linear-gradient(165deg, var(--glass-card-bg1), var(--glass-card-bg2));
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -97,6 +101,7 @@
   border: 1px solid var(--glass-card-border);
   border-radius: 0.875rem;
   background: linear-gradient(165deg, var(--glass-card-bg1), var(--glass-card-bg2));
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -117,8 +122,9 @@
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   letter-spacing: 0.025em;
-  border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
-  background: rgb(0 0 0 / 0.35);
+  border: 1px solid rgba(var(--ink-rgb), 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -143,8 +149,8 @@
 @utility input-theme {
   width: 100%;
   border-radius: 0.625rem;
-  border: 1px solid color-mix(in srgb, var(--ink) 15%, transparent);
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  border: 1px solid rgba(var(--ink-rgb), 0.16);
+  background: rgba(var(--ink-rgb), 0.04);
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   color: var(--color-ink);
@@ -180,7 +186,6 @@
 
 .animate-card-enter {
   animation: cardEnter 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
 }
 
 @keyframes slideDown {
@@ -215,6 +220,16 @@
   animation: bannerSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -231,7 +246,7 @@
   transform: translateX(-100%);
   background: linear-gradient(90deg,
       transparent 0%,
-      color-mix(in srgb, var(--ink) 7%, transparent) 50%,
+      rgba(var(--ink-rgb), 0.08) 50%,
       transparent 100%);
   animation: shimmerWave 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -262,8 +277,8 @@
 
 @utility skeleton-box {
   border-radius: 0.75rem;
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
+  background: rgba(var(--ink-rgb), 0.04);
+  border: 1px solid rgba(var(--ink-rgb), 0.06);
   position: relative;
   overflow: hidden;
 }
@@ -275,7 +290,7 @@
   transform: translateX(-100%);
   background: linear-gradient(90deg,
       transparent 0%,
-      color-mix(in srgb, var(--ink) 8%, transparent) 50%,
+      rgba(var(--ink-rgb), 0.08) 50%,
       transparent 100%);
   animation: shimmerWave 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -284,8 +299,8 @@
 body {
   background-color: var(--color-abyss);
   background-image:
-    linear-gradient(color-mix(in srgb, var(--ink) 1.7999999999999998%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--ink) 1.7999999999999998%, transparent) 1px, transparent 1px),
+    linear-gradient(rgba(var(--ink-rgb), 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--ink-rgb), 0.025) 1px, transparent 1px),
     radial-gradient(1100px 750px at 85% -10%, rgb(52 211 153 / 0.08), transparent 60%),
     radial-gradient(900px 650px at -10% 15%, rgb(163 230 53 / 0.05), transparent 55%),
     radial-gradient(1000px 800px at 50% 115%, rgb(16 185 129 / 0.07), transparent 60%);
@@ -319,7 +334,7 @@ textarea:focus-visible,
 select:focus-visible {
   border-color: rgb(52 211 153 / 0.55) !important;
   box-shadow: 0 0 0 3px rgb(52 211 153 / 0.15);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  background: rgba(var(--ink-rgb), 0.06);
 }
 
 ::selection {
@@ -338,13 +353,13 @@ select:focus-visible {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--ink) 25%, transparent);
+  background: rgba(var(--ink-rgb), 0.25);
   border-radius: 8px;
   border: 2px solid var(--color-abyss);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--ink) 40%, transparent);
+  background: rgba(var(--ink-rgb), 0.4);
 }
 
 /* ── Leaflet (Mission Control skin) ────────────────────────────────── */
@@ -366,41 +381,42 @@ select:focus-visible {
 }
 
 .leaflet-bar {
-  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent) !important;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5) !important;
+  border: 1px solid rgba(var(--ink-rgb), 0.12) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
   border-radius: 0.625rem !important;
   overflow: hidden;
 }
 
 .leaflet-bar a {
-  background: color-mix(in srgb, var(--panel) 90%, transparent) !important;
+  background: var(--panel) !important;
   color: var(--ink) !important;
-  border-bottom: 1px solid color-mix(in srgb, var(--ink) 8%, transparent) !important;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1) !important;
 }
 
 .leaflet-bar a:hover {
-  background: color-mix(in srgb, var(--ink) 15%, transparent) !important;
+  background: rgba(var(--ink-rgb), 0.15) !important;
   color: #ffffff !important;
 }
 
 .leaflet-control-scale-line {
-  background: color-mix(in srgb, var(--abyss) 70%, transparent) !important;
+  background: rgba(var(--abyss-rgb), 0.8) !important;
   color: var(--color-mist) !important;
-  border-color: color-mix(in srgb, var(--ink) 20%, transparent) !important;
+  border-color: rgba(var(--ink-rgb), 0.2) !important;
 }
 
 .leaflet-popup-content-wrapper {
-  background: color-mix(in srgb, var(--panel) 95%, transparent) !important;
+  background: var(--panel) !important;
   color: var(--color-ink) !important;
-  border: 1px solid color-mix(in srgb, var(--ink) 15%, transparent);
+  border: 1px solid rgba(var(--ink-rgb), 0.15);
   border-radius: 0.75rem !important;
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.55) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
 .leaflet-popup-tip {
-  background: color-mix(in srgb, var(--panel) 95%, transparent) !important;
-  border: 1px solid color-mix(in srgb, var(--ink) 15%, transparent);
+  background: var(--panel) !important;
+  border: 1px solid rgba(var(--ink-rgb), 0.15);
 }
 
 .leaflet-popup-close-button {
@@ -408,12 +424,12 @@ select:focus-visible {
 }
 
 .leaflet-tooltip {
-  background: color-mix(in srgb, var(--panel) 90%, transparent) !important;
+  background: var(--panel) !important;
   color: var(--color-ink) !important;
-  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent) !important;
+  border: 1px solid rgba(var(--ink-rgb), 0.15) !important;
   box-shadow: none !important;
 }
 
 .leaflet-tooltip-top:before {
-  border-top-color: color-mix(in srgb, var(--ink) 12%, transparent) !important;
+  border-top-color: rgba(var(--ink-rgb), 0.15) !important;
 }

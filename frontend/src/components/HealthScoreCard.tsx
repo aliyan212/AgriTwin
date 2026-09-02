@@ -138,8 +138,8 @@ export default function HealthScoreCard({
 
   return (
     <div className="glass-panel p-5 relative overflow-hidden">
-      {/* Background ambient lighting */}
-      <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand/8 blur-3xl" />
+      {/* Background ambient lighting - radial gradient (no GPU blur filter glitch) */}
+      <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(52,211,153,0.12)_0%,transparent_70%)]" />
 
       <div className="flex items-center justify-between mb-2">
         <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-mist">
@@ -153,14 +153,30 @@ export default function HealthScoreCard({
       <div className="my-3 flex items-center gap-5 rounded-xl border border-ink/6 bg-ink/[0.02] p-4">
         <div className="relative h-28 w-28 shrink-0">
           <svg viewBox="0 0 128 128" className="h-full w-full -rotate-90">
+            {/* Base track */}
             <circle
               cx="64"
               cy="64"
               r={R}
               fill="none"
-              stroke="rgba(255,255,255,0.06)"
+              stroke="rgba(128,128,128,0.15)"
               strokeWidth="9"
             />
+            {/* Ambient vector halo (safe across all mobile GPUs without drop-shadow corruption) */}
+            <circle
+              cx="64"
+              cy="64"
+              r={R}
+              fill="none"
+              stroke={gaugeStroke(pct)}
+              strokeWidth="12"
+              strokeLinecap="round"
+              strokeDasharray={CIRC}
+              strokeDashoffset={CIRC - (pct / 100) * CIRC}
+              strokeOpacity="0.18"
+              className="transition-all duration-1000 ease-out"
+            />
+            {/* Active gauge indicator */}
             <circle
               cx="64"
               cy="64"
@@ -172,7 +188,6 @@ export default function HealthScoreCard({
               strokeDasharray={CIRC}
               strokeDashoffset={CIRC - (pct / 100) * CIRC}
               className="transition-all duration-1000 ease-out"
-              style={{ filter: `drop-shadow(0 0 8px ${gaugeStroke(pct)}77)` }}
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
