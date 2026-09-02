@@ -1,23 +1,58 @@
-"""Weather data service — integrates Open-Meteo and NASA POWER APIs with offline fallbacks."""
+"""Weather data service — integrates Open-Meteo and NASA POWER APIs with offline fallbacks and in-memory TTL caching."""
 
 import datetime
+import time
+from typing import Any
 import httpx
 
 from app.config import settings
 
 
+class SimpleTTLCache:
+    """Thread-safe in-memory cache with time-to-live expiration."""
+
+    def __init__(self, ttl_seconds: int):
+        self.ttl = ttl_seconds
+        self._cache: dict[str, tuple[float, Any]] = {}
+
+    def get(self, key: str) -> Any | None:
+        if key in self._cache:
+            ts, val = self._cache[key]
+            if time.time() - ts < self.ttl:
+                return val
+            del self._cache[key]
+        return None
+
+    def set(self, key: str, val: Any) -> None:
+        # Cap memory to avoid unbounded growth
+        if len(self._cache) > 500:
+            self._cache.clear()
+        self._cache[key] = (time.time(), val)
+
+
 class WeatherService:
-    """Fetch weather data from external providers with resilient fallbacks."""
+    """Fetch weather data from external providers with resilient fallbacks and TTL caching."""
 
     def __init__(self):
         self.open_meteo_url = settings.OPEN_METEO_BASE_URL
         self.air_quality_url = settings.OPEN_METEO_AIR_QUALITY_URL
         self.nasa_power_url = settings.NASA_POWER_BASE_URL
 
+        # In-memory TTL caches to eliminate redundant external latency
+        self._forecast_cache = SimpleTTLCache(ttl_seconds=600)   # 10 minutes
+        self._current_cache = SimpleTTLCache(ttl_seconds=600)    # 10 minutes
+        self._aqi_cache = SimpleTTLCache(ttl_seconds=900)        # 15 minutes
+        self._nasa_cache = SimpleTTLCache(ttl_seconds=86400)     # 24 hours
+
     async def get_forecast_open_meteo(
         self, lat: float, lon: float, forecast_days: int = 7
     ) -> dict:
-        """Fetch hourly weather forecast from Open-Meteo with fallback."""
+        """Fetch hourly weather forecast from Open-Meteo with fallback and caching."""
+        cache_key = f"{round(lat, 3)}_{round(lon, 3)}_{forecast_days}"
+        cached = self._forecast_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         params = {
             "latitude": lat,
             "longitude": lon,
@@ -51,12 +86,14 @@ class WeatherService:
             async with httpx.AsyncClient(timeout=8) as client:
                 resp = await client.get(f"{self.open_meteo_url}/forecast", params=params)
                 resp.raise_for_status()
-                return resp.json()
+                data = resp.json()
+                self._forecast_cache.set(cache_key, data)
+                return data
         except Exception:
             # Resilient fallback: realistic Punjab agrometeorological forecast
             now = datetime.date.today()
             dates = [(now + datetime.timedelta(days=i)).isoformat() for i in range(forecast_days)]
-            return {
+            fallback_data = {
                 "daily": {
                     "time": dates,
                     "temperature_2m_max": [32.5, 33.0, 31.8, 30.5, 32.0, 33.5, 32.2][:forecast_days],
@@ -77,9 +114,15 @@ class WeatherService:
                     "soil_temperature_0_to_7cm": 26.5,
                 },
             }
+            return fallback_data
 
     async def get_current_weather_open_meteo(self, lat: float, lon: float) -> dict:
-        """Fetch current weather conditions from Open-Meteo with fallback."""
+        """Fetch current weather conditions from Open-Meteo with fallback and caching."""
+        cache_key = f"{round(lat, 3)}_{round(lon, 3)}"
+        cached = self._current_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         params = {
             "latitude": lat,
             "longitude": lon,
@@ -99,7 +142,9 @@ class WeatherService:
             async with httpx.AsyncClient(timeout=8) as client:
                 resp = await client.get(f"{self.open_meteo_url}/forecast", params=params)
                 resp.raise_for_status()
-                return resp.json()
+                data = resp.json()
+                self._current_cache.set(cache_key, data)
+                return data
         except Exception:
             # Resilient fallback: realistic Punjab current conditions
             now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -117,7 +162,12 @@ class WeatherService:
             }
 
     async def get_air_quality(self, lat: float, lon: float) -> dict | None:
-        """Fetch real-time air quality (PM2.5 / PM10) with fallback."""
+        """Fetch real-time air quality (PM2.5 / PM10) with fallback and caching."""
+        cache_key = f"{round(lat, 3)}_{round(lon, 3)}"
+        cached = self._aqi_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         try:
             async with httpx.AsyncClient(timeout=8) as client:
                 resp = await client.get(
@@ -133,12 +183,14 @@ class WeatherService:
                 data = resp.json()
                 current = data.get("current", {})
                 if current.get("pm2_5") is not None or current.get("pm10") is not None:
-                    return {
+                    res = {
                         "pm2_5": current.get("pm2_5"),
                         "pm10": current.get("pm10"),
                         "source": "Open-Meteo Air Quality (CAMS)",
                         "updated_at": current.get("time"),
                     }
+                    self._aqi_cache.set(cache_key, res)
+                    return res
         except Exception:
             pass
 
@@ -152,7 +204,12 @@ class WeatherService:
     async def get_historical_nasa_power(
         self, lat: float, lon: float, start_date: str, end_date: str
     ) -> dict:
-        """Fetch historical climate data from NASA POWER with fallback."""
+        """Fetch historical climate data from NASA POWER with fallback and caching."""
+        cache_key = f"{round(lat, 3)}_{round(lon, 3)}_{start_date}_{end_date}"
+        cached = self._nasa_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         params = {
             "parameters": ",".join([
                 "T2M",
@@ -176,7 +233,9 @@ class WeatherService:
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.get(f"{self.nasa_power_url}/daily/point", params=params)
                 resp.raise_for_status()
-                return resp.json()
+                data = resp.json()
+                self._nasa_cache.set(cache_key, data)
+                return data
         except Exception:
             return {"properties": {"parameter": {}}}
 

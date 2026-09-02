@@ -162,7 +162,7 @@ export default function HealthScoreCard({
               stroke="rgba(128,128,128,0.15)"
               strokeWidth="9"
             />
-            {/* Ambient vector halo (safe across all mobile GPUs without drop-shadow corruption) */}
+            {/* Ambient vector halo */}
             <circle
               cx="64"
               cy="64"
