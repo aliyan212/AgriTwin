@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 # Ensure all engine modules are resolvable in serverless environments
 _app_dir = Path(__file__).resolve().parent
@@ -140,6 +141,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(auth.router, prefix=settings.API_PREFIX)
