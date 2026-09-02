@@ -371,41 +371,41 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Action cluster: Farm Selector + Full Details */}
-        <div className="flex flex-wrap items-center gap-2.5 relative z-[1000]">
-          <FarmSelector farms={farms} selected={selectedFarm} onSelect={setSelectedFarm} />
+        {/* Action cluster: Farm Selector + Quick Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 relative z-[1000] w-full md:w-auto">
+          <div className="w-full sm:w-auto">
+            <FarmSelector farms={farms} selected={selectedFarm} onSelect={setSelectedFarm} />
+          </div>
 
           {selectedFarm && (
-            <Link
-              href={`/farms/${selectedFarm.id}`}
-              className="flex items-center gap-1.5 rounded-xl border border-ink/12 bg-ink/6 px-3.5 py-1.5 text-xs font-semibold text-ink transition-all hover:border-brand/40 hover:bg-brand/12 hover:text-brand"
-            >
-              <Icon name="activity" size={13} />
-              <span>{t("viewAnalytics", "Full Analytics")}</span>
-            </Link>
-          )}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
+              <Link
+                href={`/farms/${selectedFarm.id}`}
+                className="shrink-0 flex items-center gap-1.5 rounded-xl border border-ink/12 bg-ink/6 px-3.5 py-1.5 text-xs font-semibold text-ink transition-all hover:border-brand/40 hover:bg-brand/12 hover:text-brand"
+              >
+                <Icon name="activity" size={13} />
+                <span>{t("viewAnalytics", "Full Analytics")}</span>
+              </Link>
 
-          {selectedFarm && (
-            <Link
-              href={`/farms/${selectedFarm.id}/history`}
-              className="flex items-center gap-1.5 rounded-xl border border-ink/12 bg-ink/6 px-3 py-1.5 text-xs font-semibold text-mist transition-all hover:border-ink/20 hover:text-ink"
-              title="Field Observation History"
-            >
-              <Icon name="clock" size={13} />
-              <span>{t("viewHistory", "History Log")}</span>
-            </Link>
-          )}
+              <Link
+                href={`/farms/${selectedFarm.id}/history`}
+                className="shrink-0 flex items-center gap-1.5 rounded-xl border border-ink/12 bg-ink/6 px-3 py-1.5 text-xs font-semibold text-mist transition-all hover:border-ink/20 hover:text-ink"
+                title="Field Observation History"
+              >
+                <Icon name="clock" size={13} />
+                <span>{t("viewHistory", "History Log")}</span>
+              </Link>
 
-          {selectedFarm && (
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              disabled={deleting}
-              className="flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors disabled:opacity-50"
-              title="Delete Selected Farm"
-            >
-              <Icon name="trash" size={13} />
-              <span>{t("deleteFarmNode", "Delete")}</span>
-            </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                disabled={deleting}
+                className="shrink-0 flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors disabled:opacity-50"
+                title="Delete Selected Farm"
+              >
+                <Icon name="trash" size={13} />
+                <span>{t("deleteFarmNode", "Delete")}</span>
+              </button>
+            </div>
           )}
         </div>
       </div>

@@ -113,9 +113,9 @@ export default function HeaderNav() {
         </div>
 
         {/* Right utilities: Telemetry status + Language + Theme + User profile */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Live Node Telemetry Beacon */}
-          <div className="hidden sm:flex items-center gap-2 rounded-full border border-ink/10 bg-ink/5 px-2.5 py-1 text-[11px] font-mono">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* Live Node Telemetry Beacon (Desktop) */}
+          <div className="hidden lg:flex items-center gap-2 rounded-full border border-ink/10 bg-ink/5 px-2.5 py-1 text-[11px] font-mono">
             <span className="relative flex h-2 w-2">
               {apiOnline === true && (
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
@@ -138,15 +138,17 @@ export default function HeaderNav() {
             </span>
           </div>
 
-          {/* Language Toggle (EN / اردو) */}
-          <LanguageToggle />
+          {/* Language Toggle (Desktop & Tablet) */}
+          <div className="hidden sm:block">
+            <LanguageToggle />
+          </div>
 
-          {/* Theme Toggle (Dark / Light) */}
+          {/* Theme Toggle (Always visible) */}
           <ThemeToggle />
 
-          {/* User Auth or Sign In */}
+          {/* User Auth or Sign In (Desktop & Tablet) */}
           {user ? (
-            <div className="flex items-center gap-2 rounded-xl border border-ink/10 bg-ink/4 p-1 pl-2.5">
+            <div className="hidden sm:flex items-center gap-2 rounded-xl border border-ink/10 bg-ink/4 p-1 pl-2.5">
               <span className="text-xs font-medium text-ink truncate max-w-[120px]">
                 {user.name}
               </span>
@@ -161,26 +163,63 @@ export default function HeaderNav() {
           ) : (
             <Link
               href="/login"
-              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-abyss shadow-[0_4px_16px_rgba(16,185,129,0.35)] transition-all hover:scale-[1.02] hover:shadow-[0_4px_24px_rgba(16,185,129,0.55)]"
+              className="hidden sm:flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-abyss shadow-[0_4px_16px_rgba(16,185,129,0.35)] transition-all hover:scale-[1.02] hover:shadow-[0_4px_24px_rgba(16,185,129,0.55)]"
             >
               <Icon name="user" size={12} strokeWidth={2.5} />
               <span>{t("signIn", "Sign In")}</span>
             </Link>
           )}
-          {/* Mobile menu toggle */}
+
+          {/* Mobile menu toggle button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg text-mist hover:bg-ink/10 hover:text-ink transition-colors"
+            className="md:hidden flex h-8 w-8 items-center justify-center rounded-xl border border-ink/10 text-mist hover:bg-ink/6 hover:text-ink transition-colors active:scale-95"
+            aria-label="Toggle navigation menu"
           >
             <Icon name={mobileMenuOpen ? "x" : "menu"} size={16} />
           </button>
         </div>
       </div>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile dropdown drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-ink/8 bg-abyss/95 backdrop-blur-xl px-4 py-3 shadow-xl">
-          <nav className="flex flex-col gap-2">
+        <div className="md:hidden border-t border-ink/8 bg-panel/95 backdrop-blur-2xl px-4 py-4 shadow-2xl space-y-4 animate-slide-down">
+          {/* User Profile or Sign In Button on Mobile */}
+          {user ? (
+            <div className="flex items-center justify-between rounded-xl border border-ink/10 bg-ink/[0.03] p-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/15 text-brand font-bold text-sm">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-ink">{user.name}</p>
+                  <p className="text-[10px] text-mist">{user.email || "Punjab Farmer"}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-1 text-xs text-rose-500 font-semibold px-2.5 py-1 rounded-lg hover:bg-rose-500/10 transition-colors"
+              >
+                <Icon name="logOut" size={13} />
+                <span>{t("signOut", "Sign Out")}</span>
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-b from-emerald-400 to-emerald-600 py-2.5 text-xs font-bold text-abyss shadow-md active:scale-[0.98] transition-all"
+            >
+              <Icon name="user" size={14} strokeWidth={2.5} />
+              <span>{t("signIn", "Sign In to AgriTwin")}</span>
+            </Link>
+          )}
+
+          {/* Navigation Links */}
+          <nav className="flex flex-col gap-1">
             {navLinks.map((link) => {
               const isActive =
                 link.href === "/"
@@ -191,17 +230,21 @@ export default function HeaderNav() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold tracking-wide transition-all ${isActive
-                    ? "border border-brand/30 bg-brand/12 text-brand shadow-[0_0_12px_rgba(52,211,153,0.2)]"
-                    : "text-mist hover:bg-ink/6 hover:text-ink"
-                    }`}
+                  className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all ${
+                    isActive
+                      ? "border border-brand/30 bg-brand/12 text-brand"
+                      : "text-mist hover:bg-ink/5 hover:text-ink"
+                  }`}
                 >
-                  <Icon
-                    name={link.icon}
-                    size={15}
-                    className={isActive ? "text-brand" : "text-dim"}
-                  />
-                  {link.label}
+                  <span className="flex items-center gap-2.5">
+                    <Icon
+                      name={link.icon}
+                      size={16}
+                      className={isActive ? "text-brand" : "text-dim"}
+                    />
+                    <span>{link.label}</span>
+                  </span>
+                  {isActive && <span className="h-1.5 w-1.5 rounded-full bg-brand" />}
                 </Link>
               );
             })}
@@ -212,12 +255,38 @@ export default function HeaderNav() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-mist transition-colors hover:bg-ink/6 hover:text-ink"
+              className="flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-semibold text-mist hover:bg-ink/5 hover:text-ink transition-colors"
             >
-              <Icon name="externalLink" size={15} className="text-dim" />
-              <span>API Docs</span>
+              <span className="flex items-center gap-2.5">
+                <Icon name="externalLink" size={15} className="text-dim" />
+                <span>API Docs (Swagger)</span>
+              </span>
+              <span className="text-[10px] font-mono text-dim">v1.0</span>
             </a>
           </nav>
+
+          {/* Mobile Footer: Language Selector + Node Status */}
+          <div className="pt-3 border-t border-ink/8 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span
+                  className={`relative inline-flex h-2 w-2 rounded-full ${
+                    apiOnline === true
+                      ? "bg-emerald-400"
+                      : apiOnline === false
+                      ? "bg-rose-500"
+                      : "bg-amber-400"
+                  }`}
+                />
+              </span>
+              <span className="text-[10px] font-mono text-mist">
+                {apiOnline === true ? "Punjab Node Live" : "API Offline"}
+              </span>
+            </div>
+            <div className="sm:hidden">
+              <LanguageToggle />
+            </div>
+          </div>
         </div>
       )}
     </header>
