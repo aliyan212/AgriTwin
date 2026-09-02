@@ -73,7 +73,7 @@ async def lifespan(app: FastAPI):
                 tubewell_hourly_cost_pkr=1400.0,
             )
             farm2 = Farm(
-                user_id=demo_user.id,
+                user_id=farmer.id,
                 name="Faisalabad Rechna Twin (سمندری روڈ)",
                 district="Faisalabad",
                 province="Punjab",
