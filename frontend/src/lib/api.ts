@@ -29,7 +29,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     if (isGet && typeof window !== "undefined") {
       try {
         localStorage.setItem(cacheKey, JSON.stringify(data));
-      } catch (_) {}
+      } catch (_) { }
     }
     return data;
   } catch (err) {
@@ -40,7 +40,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         try {
           console.info(`[OfflineStore] Serving cached response for ${path}`);
           return JSON.parse(cached) as T;
-        } catch (_) {}
+        } catch (_) { }
       }
     }
     throw err;

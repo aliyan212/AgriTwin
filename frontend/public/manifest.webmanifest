@@ -28,6 +28,10 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["agriculture", "productivity", "utilities"],
+  "categories": [
+    "agriculture",
+    "productivity",
+    "utilities"
+  ],
   "lang": "ur"
 }
