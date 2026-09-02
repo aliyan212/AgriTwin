@@ -253,6 +253,76 @@ export default function AboutPage() {
         </div>
       </div>
 
+      {/* ── Engineering & Development Team ──────────────────────────────────── */}
+      <div className="glass-panel p-6 sm:p-8 border-ink/8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full pointer-events-none" />
+        <div className="text-center mb-6">
+          <span className="text-xs font-mono uppercase tracking-wider text-brand">
+            {isUrdu ? "انجینئرنگ تے ڈویلپمنٹ" : "Engineering & Architecture"}
+          </span>
+          <h2 className="text-xl sm:text-2xl font-bold text-ink mt-1">
+            {isUrdu ? "ایگری ٹوئن ڈویلپمنٹ ٹیم" : "The Team Behind AgriTwin"}
+          </h2>
+          <p className="text-xs text-mist mt-1 max-w-xl mx-auto">
+            {isUrdu
+              ? "پاکستان دی زراعت نوں جدید ترین خلائی سیٹلائٹ ٹیکنالوجی، مصنوعی ذہانت تے انڈس واٹر نیٹ ورک نال جوڑن والی سرشار ٹیم۔"
+              : "Built with passion to modernize Pakistan's agriculture through space-age remote sensing, machine learning, and Indus Basin water modeling."}
+          </p>
+        </div>
+
+        <div className="max-w-2xl mx-auto">
+          <div className="rounded-2xl border border-ink/10 bg-ink/[0.02] p-5 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start gap-5 hover:border-brand/30 transition-all">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-abyss font-extrabold text-2xl shadow-lg ring-2 ring-emerald-400/30 shrink-0">
+              A
+            </div>
+            <div className="space-y-2 text-center sm:text-left flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-bold text-ink">Aliyan Adil</h3>
+                  <p className="text-xs text-brand font-medium">Lead AI Engineer & System Architect</p>
+                </div>
+                <div className="flex items-center justify-center sm:justify-end gap-2">
+                  <a
+                    href="https://github.com/aliyan212"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-ink/10 bg-ink/5 px-2.5 py-1 text-xs font-semibold text-mist hover:text-ink hover:bg-ink/10 transition-colors"
+                  >
+                    <span>GitHub</span>
+                    <Icon name="externalLink" size={10} className="text-dim" />
+                  </a>
+                  <a
+                    href="mailto:aliyanadil6@outlook.com"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-brand/30 bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand hover:bg-brand/20 transition-colors"
+                  >
+                    <span>Contact</span>
+                  </a>
+                </div>
+              </div>
+
+              <p className="text-xs text-mist leading-relaxed">
+                Specializing in AI systems, remote sensing pipelines, and geospatial engineering. Architected the Indus Basin Warabandi irrigation router, Saxton-Rawls soil hydraulics engine, and thermal phenology models powering AgriTwin.
+              </p>
+
+              <div className="flex flex-wrap gap-1.5 pt-1 justify-center sm:justify-start">
+                <span className="rounded-md border border-ink/8 bg-ink/[0.03] px-2 py-0.5 text-[10px] font-mono text-dim">
+                  Full-Stack Next.js 16
+                </span>
+                <span className="rounded-md border border-ink/8 bg-ink/[0.03] px-2 py-0.5 text-[10px] font-mono text-dim">
+                  FastAPI & Python 3.12
+                </span>
+                <span className="rounded-md border border-ink/8 bg-ink/[0.03] px-2 py-0.5 text-[10px] font-mono text-dim">
+                  Geospatial & Leaflet GIS
+                </span>
+                <span className="rounded-md border border-ink/8 bg-ink/[0.03] px-2 py-0.5 text-[10px] font-mono text-dim">
+                  NASA MODIS & ISRIC APIs
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Footer / Mission Statement ─────────────────────────────────────── */}
       <div className="text-center space-y-3 pt-4 border-t border-ink/8">
         <p className="text-xs text-mist font-mono">
