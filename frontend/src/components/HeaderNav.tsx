@@ -51,10 +51,15 @@ export default function HeaderNav() {
     }
   };
 
-  const navLinks = [
+  const desktopNavLinks = [
     { href: "/", label: t("navDashboard", "Dashboard"), icon: "activity" as const },
     { href: "/farms", label: t("navFarmsHub", "Farms Hub"), icon: "wheat" as const },
-    { href: "/about", label: t("navAbout", "About"), icon: "info" as const },
+  ];
+
+  const mobileNavLinks = [
+    { href: "/", label: t("navDashboard", "Dashboard"), icon: "activity" as const },
+    { href: "/farms", label: t("navFarmsHub", "Farms Hub"), icon: "wheat" as const },
+    { href: "/about", label: t("navAbout", "About Platform"), icon: "info" as const },
   ];
 
   return (
@@ -79,9 +84,9 @@ export default function HeaderNav() {
             </div>
           </Link>
 
-          {/* Navigation links */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => {
+          {/* Navigation links (Desktop) */}
+          <nav className="hidden md:flex items-center gap-1.5">
+            {desktopNavLinks.map((link) => {
               const isActive =
                 link.href === "/"
                   ? pathname === "/"
@@ -104,18 +109,6 @@ export default function HeaderNav() {
                 </Link>
               );
             })}
-
-            {/* FastAPI Docs External Link */}
-            <a
-              href={docsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-mist transition-colors hover:bg-ink/6 hover:text-ink"
-              title="Open Swagger REST API Docs"
-            >
-              <span>{t("navDocs", "API Docs")}</span>
-              <Icon name="externalLink" size={11} className="text-dim" />
-            </a>
           </nav>
         </div>
 
@@ -287,7 +280,7 @@ export default function HeaderNav() {
 
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1">
-            {navLinks.map((link) => {
+            {mobileNavLinks.map((link) => {
               const isActive =
                 link.href === "/"
                   ? pathname === "/"

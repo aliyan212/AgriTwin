@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import HeaderNav from "@/components/HeaderNav";
+import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
@@ -78,18 +79,8 @@ export default function RootLayout({
             {/* ── PWA Install Prompt Listener ─────────────────────────────────── */}
             <ServiceWorkerRegistration />
 
-            {/* ── Footer ─────────────────────────────────────────────────────── */}
-            <footer className="border-t border-ink/8 py-5 text-center text-xs text-dim bg-abyss/60">
-              <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-2">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                  AgriTwin AI &mdash; Pakistan Agriculture Intelligence Engine
-                </span>
-                <span className="font-mono text-[11px] text-dim">
-                  MODIS Terra &middot; Open-Meteo &middot; NASA POWER &middot; AgriCore v0.1
-                </span>
-              </div>
-            </footer>
+            {/* ── Global Footer ─────────────────────────────────────────────── */}
+            <Footer />
           </LanguageProvider>
         </ThemeProvider>
       </body>
