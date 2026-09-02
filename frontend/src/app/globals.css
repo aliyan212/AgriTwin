@@ -186,19 +186,7 @@
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translate(-50%, -20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(-8px);
   }
 
   to {
@@ -208,7 +196,23 @@
 }
 
 .animate-slide-down {
-  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes bannerSlideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-banner-slide-down {
+  animation: bannerSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-fade-in {

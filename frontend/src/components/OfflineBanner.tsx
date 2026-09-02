@@ -44,7 +44,7 @@ export default function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed top-16 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 animate-slide-down pointer-events-none max-w-[92vw]"
+      className="fixed top-16 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 animate-banner-slide-down pointer-events-none max-w-[92vw]"
     >
       {isOffline ? (
         <div className="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-50/95 dark:bg-amber-950/80 px-4 py-2 text-xs font-semibold text-amber-900 dark:text-amber-200 shadow-lg backdrop-blur-md">

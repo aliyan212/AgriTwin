@@ -8,6 +8,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/components/LanguageProvider";
 import { api, type AuthUser } from "@/lib/api";
+import { usePwaInstall } from "@/components/ServiceWorkerRegistration";
 
 export default function HeaderNav() {
   const pathname = usePathname();
@@ -15,6 +16,7 @@ export default function HeaderNav() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { canInstall, installApp } = usePwaInstall();
 
   useEffect(() => {
     // Check API health
@@ -146,6 +148,18 @@ export default function HeaderNav() {
           {/* Theme Toggle (Always visible) */}
           <ThemeToggle />
 
+          {/* Optional desktop Install App button if available */}
+          {canInstall && (
+            <button
+              onClick={installApp}
+              className="hidden lg:flex items-center gap-1.5 rounded-xl border border-brand/30 bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand hover:bg-brand/20 transition-all active:scale-95"
+              title="Install AgriTwin PWA"
+            >
+              <Icon name="download" size={12} />
+              <span>{isUrdu ? "ایپ انسٹال" : "Install App"}</span>
+            </button>
+          )}
+
           {/* User Auth or Sign In (Desktop & Tablet) */}
           {user ? (
             <div className="hidden sm:flex items-center gap-2 rounded-xl border border-ink/10 bg-ink/4 p-1 pl-2.5">
@@ -183,7 +197,7 @@ export default function HeaderNav() {
 
       {/* Mobile dropdown drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-ink/8 bg-panel/95 backdrop-blur-2xl px-4 py-4 shadow-2xl space-y-4 animate-slide-down">
+        <div className="md:hidden w-full border-t border-ink/8 bg-panel/95 backdrop-blur-2xl px-4 py-4 shadow-2xl space-y-4 animate-slide-down">
           {/* User Profile or Sign In Button on Mobile */}
           {user ? (
             <div className="flex items-center justify-between rounded-xl border border-ink/10 bg-ink/[0.03] p-3">
@@ -216,6 +230,34 @@ export default function HeaderNav() {
               <Icon name="user" size={14} strokeWidth={2.5} />
               <span>{t("signIn", "Sign In to AgriTwin")}</span>
             </Link>
+          )}
+
+          {/* PWA Install Button inside Mobile Menu */}
+          {canInstall && (
+            <button
+              onClick={() => {
+                installApp();
+                setMobileMenuOpen(false);
+              }}
+              className="flex w-full items-center justify-between rounded-xl border border-brand/30 bg-brand/10 p-3 text-left transition-all hover:bg-brand/15 active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-abyss shrink-0">
+                  <Icon name="download" size={15} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-ink">
+                    {isUrdu ? "ایگری ٹوئن ایپ انسٹال کرو" : "Install AgriTwin App"}
+                  </p>
+                  <p className="text-[10px] text-mist">
+                    {isUrdu ? "ہوم اسکرین تے آف لائن رسائی" : "Add to home screen for offline access"}
+                  </p>
+                </div>
+              </div>
+              <span className="rounded-lg bg-brand px-2.5 py-1 text-[11px] font-bold text-abyss shadow-sm shrink-0">
+                {isUrdu ? "انسٹال" : "Install"}
+              </span>
+            </button>
           )}
 
           {/* Navigation Links */}
