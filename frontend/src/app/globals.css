@@ -297,6 +297,19 @@ html.dark,
 /* ── Base ──────────────────────────────────────────────────────────── */
 body {
   background-color: var(--color-abyss);
+  color: var(--color-ink);
+  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+  position: relative;
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--color-abyss);
   background-image:
     linear-gradient(rgba(var(--ink-rgb), 0.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(var(--ink-rgb), 0.025) 1px, transparent 1px),
@@ -309,9 +322,6 @@ body {
     auto,
     auto,
     auto;
-  background-attachment: fixed;
-  color: var(--color-ink);
-  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
 }
 
 html.lang-urdu {

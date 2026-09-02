@@ -41,7 +41,7 @@ export default function LazyCard({
       },
       {
         threshold,
-        rootMargin: "80px 0px 80px 0px", // pre-fetch slightly before coming into view
+        rootMargin: "350px 0px 350px 0px", // pre-fetch seamlessly before coming into viewport
       }
     );
 

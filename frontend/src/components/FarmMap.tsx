@@ -131,6 +131,7 @@ export default function FarmMap({
         const map = L.map(el, {
           zoomControl: false,
           attributionControl: false,
+          scrollWheelZoom: false,
           doubleClickZoom: false,
           fadeAnimation: false,
           zoomAnimation: true,
