@@ -13,15 +13,38 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`API ${res.status}: ${body || res.statusText}`);
+  const isGet = !init?.method || init.method.toUpperCase() === "GET";
+  const cacheKey = `agritwin_offline_${path}`;
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`API ${res.status}: ${body || res.statusText}`);
+    }
+    if (res.status === 204) {
+      return null as unknown as T;
+    }
+    const data = (await res.json()) as T;
+    if (isGet && typeof window !== "undefined") {
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+      } catch (_) {}
+    }
+    return data;
+  } catch (err) {
+    // If offline or network unreachable on GET, fallback to local storage cache!
+    if (isGet && typeof window !== "undefined") {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          console.info(`[OfflineStore] Serving cached response for ${path}`);
+          return JSON.parse(cached) as T;
+        } catch (_) {}
+      }
+    }
+    throw err;
   }
-  if (res.status === 204) {
-    return null as unknown as T;
-  }
-  return res.json() as Promise<T>;
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────

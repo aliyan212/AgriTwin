@@ -33,5 +33,5 @@ Roughly 75–80% of a working MVP — impressively complete:
 2. **Alert delivery channels:** SMS/WhatsApp (e.g. Twilio) — Punjab farmers won't check a web dashboard; push the alerts to them.
 3. **Punjabi / Rural Urdu localization of recommendations and UI** — ✅ Done: Bilingual Punjabi engine (`text_ur`, `reasoning_ur`), interactive language toggle (`EN` | `پنجابی`), authentic crop phenology & agrometeorological terminology, Noto Nastaliq Urdu typography, and RTL support.
 4. **Forecast validation loop:** periodically compare ML score forecasts vs. realized scores and surface accuracy in the UI — builds trust and tunes the model.
-5. **PWA/offline support** for low-connectivity rural use.
+5. **PWA / Offline Support** — ✅ Done: Service Worker (`sw.js`) precaching, Web App Manifest (`manifest.webmanifest`), `OfflineBanner` indicator, home screen install prompt, and transparent local telemetry caching in `api.ts`.
 6. **Sentinel-2 activation** for 10 m field-level zoning (detect stressed zones within a field) once credentials are configured — the service layer is already structured for it.

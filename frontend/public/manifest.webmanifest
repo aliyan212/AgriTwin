@@ -1,0 +1,33 @@
+{
+  "name": "AgriTwin AI — Pakistan Agriculture Intelligence",
+  "short_name": "ایگری ٹوئن",
+  "description": "Real-time agrometeorology, orbital MODIS NDVI tracking, and Punjabi AI agronomy advice.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#070c09",
+  "theme_color": "#34d399",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["agriculture", "productivity", "utilities"],
+  "lang": "ur"
+}
