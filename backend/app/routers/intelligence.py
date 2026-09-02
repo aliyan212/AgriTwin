@@ -313,8 +313,13 @@ async def get_farm_intelligence(farm_id: int, db: Session = Depends(get_db)):
     # Persist observations
     _persist_weather_observation(farm, current, db)
 
+    # Most recent crop
+    latest_crop = (
+        db.query(Crop).filter(Crop.farm_id == farm.id).order_by(Crop.id.desc()).first()
+    )
+
     # Build context
-    ctx = _build_farm_context(farm, current_data, daily, climate_anomaly, ndvi_series, db)
+    ctx = _build_context(farm, latest_crop, current, forecast_data, ndvi_series, climate_anomaly)
 
     # Health score
     score = agricore.compute_health_score(ctx)
@@ -334,11 +339,6 @@ async def get_farm_intelligence(farm_id: int, db: Session = Depends(get_db)):
     # Recommendation (Gemini when configured, rule-based fallback otherwise)
     rec = await agricore.generate_recommendation(ctx, score, grounding=grounding)
     _persist_recommendation(farm_id, rec, db)
-
-    # Most recent crop
-    latest_crop = (
-        db.query(Crop).filter(Crop.farm_id == farm.id).order_by(Crop.id.desc()).first()
-    )
 
     # Forecast summary
     forecast_dates = daily.get("time", [])

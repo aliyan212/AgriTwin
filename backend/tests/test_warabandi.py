@@ -109,3 +109,4 @@ def test_warabandi_endpoint_flow(client, db_session):
         updated = put_res.json()
         assert updated["canal_turn_day"] == "Tuesday"
         assert updated["tubewell_power_source"] == "solar"
+

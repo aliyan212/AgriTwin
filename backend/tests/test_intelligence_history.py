@@ -73,3 +73,51 @@ def test_farm_history_ledger_endpoint(client, seeded_farm, db_session):
     assert ledger["farm"]["name"] == seeded_farm.name
     assert len(ledger["weather"]) >= 1
     assert ledger["weather"][0]["temperature_c"] == 24.5
+
+
+def test_farm_intelligence_unified_endpoint(client, seeded_farm):
+    """Test unified GET /api/v1/farms/{id}/intelligence endpoint."""
+    with patch("app.services.weather_service.weather_service.get_current_weather_open_meteo") as mock_curr, \
+         patch("app.services.weather_service.weather_service.get_forecast_open_meteo") as mock_fore, \
+         patch("app.services.weather_service.weather_service.get_climate_anomaly") as mock_clim, \
+         patch("app.services.weather_service.weather_service.get_air_quality") as mock_aq:
+
+        mock_curr.return_value = {
+            "current": {
+                "temperature_2m": 25.0,
+                "relative_humidity_2m": 50.0,
+                "precipitation": 0.0,
+                "wind_speed_10m": 12.0,
+                "soil_moisture_0_to_7cm": 0.22,
+                "soil_temperature_0_to_7cm": 21.0,
+            }
+        }
+        mock_fore.return_value = {
+            "daily": {
+                "time": ["2026-03-01", "2026-03-02"],
+                "temperature_2m_max": [27.0, 28.0],
+                "temperature_2m_min": [13.0, 14.0],
+                "precipitation_sum": [0.0, 0.0],
+                "et0_fao_evapotranspiration": [4.0, 4.2],
+            }
+        }
+        mock_clim.return_value = {
+            "temperature_anomaly_c": 1.2,
+            "humidity_anomaly_pct": -3.0,
+            "interpretation": "Slightly warmer than normal",
+        }
+        mock_aq.return_value = {
+            "us_aqi": 110,
+            "pm2_5": 38.0,
+            "pm10": 75.0,
+            "category": "Moderate",
+        }
+
+        res = client.get(f"/api/v1/farms/{seeded_farm.id}/intelligence")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["farm"]["id"] == seeded_farm.id
+        assert data["score"]["value"] > 0
+        assert data["crop"]["name"] == "Wheat"
+        assert "weather" in data
+        assert "recommendation" in data

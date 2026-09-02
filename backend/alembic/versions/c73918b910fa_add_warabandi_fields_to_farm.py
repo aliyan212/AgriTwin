@@ -33,3 +33,4 @@ def downgrade() -> None:
     op.drop_column('farms', 'canal_turn_time')
     op.drop_column('farms', 'canal_turn_day')
     op.drop_column('farms', 'canal_name')
+

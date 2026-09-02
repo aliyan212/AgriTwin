@@ -172,11 +172,10 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
 
         {/* Rupee Savings & Diesel Alert Box */}
         <div
-          className={`md:col-span-5 flex flex-col justify-between rounded-xl border p-4 transition-all ${
-            advice.hold_tubewell_recommended
+          className={`md:col-span-5 flex flex-col justify-between rounded-xl border p-4 transition-all ${advice.hold_tubewell_recommended
               ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-200"
               : "border-ink/8 bg-ink/[0.02] text-mist"
-          }`}
+            }`}
         >
           <div>
             <div className="flex items-center justify-between">
@@ -204,8 +203,8 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
                     ? `${advice.upcoming_rain_48h_mm} ملی میٹر بارش دی پیشگوئی`
                     : `${advice.upcoming_rain_48h_mm} mm rain expected in 48h`
                   : isUrdu
-                  ? "نہری پانی توں پہلاں ٹوب ویل نہ چلاؤ"
-                  : "Canal water turn covers current water deficit"}
+                    ? "نہری پانی توں پہلاں ٹوب ویل نہ چلاؤ"
+                    : "Canal water turn covers current water deficit"}
               </p>
             </div>
           </div>
@@ -335,8 +334,8 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
                           e.target.value === "diesel"
                             ? 1400.0
                             : e.target.value === "grid"
-                            ? 650.0
-                            : 0.0,
+                              ? 650.0
+                              : 0.0,
                       })
                     }
                     className="w-full rounded-xl border border-ink/15 bg-ink/5 px-3 py-2 text-ink focus:border-brand focus:outline-none capitalize"
@@ -377,3 +376,4 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
     </div>
   );
 }
+
