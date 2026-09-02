@@ -7,10 +7,12 @@ from pathlib import Path
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Add data-engine to sys.path so we can import AgriCore
-_data_engine = Path(__file__).resolve().parent.parent.parent / "data-engine"
-if str(_data_engine) not in sys.path:
-    sys.path.insert(0, str(_data_engine))
+# Ensure all engine modules are resolvable in serverless environments
+_app_dir = Path(__file__).resolve().parent
+_backend_dir = _app_dir.parent
+for _p in [str(_backend_dir), str(_app_dir)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from app.config import settings
 from app.database import Base, engine
