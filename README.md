@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Precision Agriculture & Digital Twin Platform for Pakistan's Agricultural Heartlands**  
-> Integrates satellite vegetation observations, real-time agrometeorology, Saxton-Rawls soil hydraulics, canal rotational rights (Warabandi), and thermal crop phenology into a bilingual Punjabi/English decision-support system for farmers and agricultural extension officers.
+> Integrates satellite observations, real-time agrometeorology, Saxton-Rawls soil hydraulics, canal rotational rights (Warabandi), and thermal crop phenology into a bilingual Punjabi/English decision-support platform for farmers and agricultural extension officers.
 
 ---
 
@@ -18,69 +18,50 @@
 
 ---
 
-## Core Capabilities
+## System Modules & Capabilities
 
-- **Satellite Vegetation Monitoring**: Tracks 12-month NASA MODIS Terra (MOD13Q1) NDVI time-series with historical canopy comparisons.
-- **Live Agrometeorology**: Real-time 2m temperature, relative humidity, precipitation, and FAO-56 Reference Evapotranspiration (ET0) via Open-Meteo.
-- **Warabandi Canal Irrigation Optimizer**: Models Punjab's weekly canal rotational schedules, calculates turn countdowns, and advises when to hold diesel tubewell pumping to save costs (Rs. 1,400–2,200/hr).
-- **Soil Physics & Moisture Engine**: Implements Saxton-Rawls pedotransfer equations for field capacity, wilting point, plant available water capacity, and hydraulic conductivity, integrated with ISRIC SoilGrids 2.0.
-- **GDD Thermal Phenology**: Base-temperature calibrated Growing Degree Day accumulation tracking crop growth stages and warning of Terminal Heat Stress during grain filling.
-- **Punjab Smog & AQI Monitoring**: Real-time PM2.5 and PM10 air quality indices (Copernicus CAMS / Open-Meteo) with crop hazard indicators.
-- **Dual-Persona Operational Modes**:
-  - **Farmer Mode**: Individual farm parcel tracking, diesel tubewell savings calculations, crop logs, and full management controls.
-  - **Extension Officer Mode**: Multi-district regional surveillance banner (Directorate General of Agriculture Extension Punjab), district-wide plot overview, and locked field deletion for audit safety.
-- **Security & Auth Architecture**: Mandatory Login-on-Start AuthGuard, zero sensitive tokens stored in browser localStorage, and support for HttpOnly session cookies.
-- **Native Punjabi & English Localization**: Complete UI localization in authentic Punjabi (Shahmukhi / پنجابی) and English, with RTL typography and local crop/stage terminology.
+### 1. Warabandi Canal Irrigation Optimizer
+- Models weekly canal rotational schedules across Punjab's canal commands (Lower Bari Doab, Upper Chenab, Sidhnai, Fordwah, Dera Ghazi Khan, etc.).
+- Computes real-time countdowns to each parcel's next scheduled canal turn.
+- Integrates 7-day rainfall forecasts: advises farmers when to delay diesel tubewell pumping, helping avoid redundant water applications and saving fuel expenditures (Rs. 1,400–2,200/hour).
 
----
+### 2. Soil Physics & Hydraulics Engine
+- Implements Saxton-Rawls pedotransfer equations to determine soil hydraulic properties from sand, silt, and clay fractions.
+- Calculates key moisture metrics:
+  - Saturated Moisture Content
+  - Field Capacity (33 kPa)
+  - Permanent Wilting Point (1500 kPa)
+  - Plant Available Water Capacity (AWC)
+  - Saturated Hydraulic Conductivity (Ks, mm/hr)
+- Maps soil profiles to USDA texture classifications and authentic local Punjabi classifications (میرا, چکنی مٹی, ریتلی).
+- Retrieves gridded global soil data from ISRIC SoilGrids 2.0 with regional fallback profiles for central and southern Punjab.
 
-## Technical Changes & Improvements
+### 3. GDD Thermal Phenology & Stress Alerting
+- Calibrates heat accumulation using crop-specific base temperatures: 4.4°C for Wheat, 15.6°C for Cotton, 10.0°C for Rice and Maize, and 18.0°C for Sugarcane.
+- Tracks physiological maturity based on accumulated thermal units independently of calendar days.
+- Issues Terminal Heat Stress alerts when ambient temperatures exceed 34°C during reproductive and grain-filling stages.
+- Automatically recalculates growth stages as time advances since sowing.
 
-### 1. User Interface & Layout
-- **Cleaned Desktop Header**: Moved About Platform and API Docs to the global footer to give the top navigation breathing room. The header focuses on primary operational controls: Mission Control, Farms Operations Hub, live node status beacon, language toggle, theme toggle, and authenticated user profile.
-- **Global Footer (Footer.tsx)**: Added a persistent footer across all routes containing quick navigation links, Swagger REST documentation link, and scientific data attribution (Open-Meteo, NASA MODIS, ISRIC).
-- **Bilingual About Page (/about)**: Created an informative platform overview covering the Indus Basin water challenge, core scientific engines, dual operational personas, and team contributor profiles.
-- **Streamlined Login Experience**: Replaced large cards on the login page with low-key 1-tap demo shortcuts (`[ Farmer (Ahmad) -> ]` and `[ Officer (Dr. Tariq) -> ]`), along with an account role selector for custom registrations.
-- **Responsive Mobile Drawer**: Preserved full navigation access on mobile devices through an interactive slide-out drawer.
+### 4. Satellite Vegetation & Weather Telemetry
+- Ingests 12-month time-series observations from NASA MODIS Terra (MOD13Q1) 250m composite imagery for NDVI canopy health trends.
+- Streams real-time agrometeorological parameters via Open-Meteo: temperature, relative humidity, precipitation, wind speed, and FAO-56 Reference Evapotranspiration (ET0).
+- Tracks airborne particulate matter (PM2.5 and PM10) from Copernicus CAMS / Open-Meteo to assess seasonal Punjab smog impact on crop photosynthesis.
 
-### 2. Agricultural Logic & Core Engines
-- **Warabandi Canal Scheduler (warabandi_engine.py)**:
-  - Maps geographical coordinates to Punjab canal commands (Lower Bari Doab, Upper Chenab, Sidhnai, Fordwah, etc.).
-  - Calculates exact weekly turn start/end times and live countdowns.
-  - Integrates 7-day rainfall forecasts: if rain is imminent or a canal turn is upcoming, advises farmers to pause tubewell pumping, estimating saved diesel expenditures.
-- **Growing Degree Day (GDD) Pipeline (gdd_engine.py)**:
-  - Uses crop-specific base temperatures: 4.4°C (Wheat), 15.6°C (Cotton), 10.0°C (Rice & Maize), and 18.0°C (Sugarcane).
-  - Tracks accumulated heat units to evaluate physiological maturity independently of calendar days.
-  - Flags Terminal Heat Stress when temperatures exceed 34°C during reproductive and grain filling stages.
-- **Dynamic Phenology Synchronization**:
-  - Automatically recalculates growth stages when viewing farm crops based on elapsed days since sowing.
+### 5. Dual Operational Personas
+- **Farmer Mode**: Provides individual parcel management, live countdown to the farm's canal turn, diesel tubewell savings calculator, crop registration, and full edit/delete privileges.
+- **Extension Officer Mode**: Designed for regional surveillance (Directorate General of Agriculture Extension Punjab), providing multi-district monitoring across Okara, Faisalabad, and Multan with field deletion restricted for audit compliance.
 
-### 3. Data Accuracy & Scientific Grounding
-- **Saxton-Rawls Soil Hydraulics (soil_engine.py)**:
-  - Replaced rough texture estimates with established Saxton-Rawls pedotransfer equations.
-  - Calculates saturated moisture, field capacity (33 kPa), permanent wilting point (1500 kPa), plant available water capacity (AWC), and saturated hydraulic conductivity (Ks).
-  - Maps sand, silt, and clay fractions to USDA soil texture classes and authentic Punjabi classifications (میرا, چکنی مٹی, ریتلی).
-  - Connects to ISRIC SoilGrids 2.0 with regional fallback profiles for central and southern Punjab.
-- **Reliable Live Telemetry Beacon**:
-  - Implemented continuous 10-second background polling for `/api/v1/health` with unmount cleanup in `HeaderNav.tsx`, ensuring the live node beacon accurately reflects backend connectivity.
+### 6. Security & Session Architecture
+- **Mandatory Login-on-Start**: Unauthenticated visitors are automatically routed to the login page; the public About page remains open for exploration.
+- **No Sensitive Tokens in Browser Storage**: Eliminates XSS token theft risks by avoiding localStorage for JWT tokens and user records; sessions are managed through secure cookies (`SameSite=Lax`, `Path=/`) and an in-memory application context.
+- **Backend HttpOnly Cookies**: Supports dual authentication via `HttpOnly` session cookies (`agri_session`) or Bearer tokens.
+- **Role-Based Access Control**: Ensures farm resources are strictly bound to authenticated user accounts and restricts administrative/audit operations by role.
 
-### 4. Security Hardening & Deployment Readiness
-- **Mandatory Login-on-Start (AuthGuard.tsx)**:
-  - Unauthenticated visitors hitting `/` or protected routes are automatically redirected to `/login`.
-  - Authenticated visitors visiting `/login` are forwarded directly to `/`.
-  - The `/about` page remains publicly accessible.
-  - Branded loading radar prevents UI flashes while verifying session state.
-- **Elimination of localStorage Token Storage (AuthProvider.tsx)**:
-  - Removed JWT tokens and user data from `localStorage` to protect against XSS token exfiltration.
-  - Purges any legacy keys from `localStorage` on initial mount.
-  - Authentication sessions are handled through secure cookies (`SameSite=Lax`, `Path=/`, `Secure` in production) combined with an in-memory `AuthContext`.
-- **Backend HttpOnly Cookies (auth.py)**:
-  - `POST /api/v1/auth/login` and `POST /api/v1/auth/register` set an `HttpOnly` `agri_session` cookie in addition to returning Bearer tokens.
-  - Dependencies (`get_current_user`, `get_optional_current_user`) extract identity from either the Authorization header or the session cookie.
-  - Added `POST /api/v1/auth/logout` endpoint to clear the session cookie.
-- **Role-Based Access Control (RBAC)**:
-  - Farm creation assigns `user_id = user.id`.
-  - Extension Officers are restricted with HTTP 403 if attempting to delete farm parcels, ensuring audit integrity.
+### 7. Native Punjabi & English Localization
+- Complete interface translation in authentic Punjabi (Shahmukhi / پنجابی) and English.
+- Localized crop terminology: کنک (Wheat), چاول (Rice), پھٹی (Cotton), گنا (Sugarcane), چھلی (Maize).
+- Authentic phenological stages: اگاؤ (Emergence), شگوفے (Tillering), گنڈھ بننا (Jointing), گوپھ (Booting), بور (Flowering), دانہ بھرائی (Grain Filling), پکائی (Maturity).
+- Instant language toggle (`ENG` | `پنجابی`) with persistent user preference and RTL layout styling.
 
 ---
 
@@ -141,7 +122,7 @@ PYTHONPATH=../data-engine:app:backend pytest tests/ -v
 PYTHONPATH=../data-engine uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Interactive API documentation: **[http://localhost:8000/docs](http://localhost:8000/docs)**.
+Interactive API documentation will be available at: **[http://localhost:8000/docs](http://localhost:8000/docs)**.
 
 ---
 
@@ -166,10 +147,10 @@ Open your browser at: **[http://localhost:3000](http://localhost:3000)**.
 
 ## Testing & Quality Assurance
 
-AgriTwin maintains test coverage across both backend services and frontend utilities:
+AgriTwin includes automated test suites covering backend agronomic formulas and frontend localization parity:
 
 ```bash
-# 1. Run Backend Pytest Suite (20 automated tests)
+# 1. Run Backend Pytest Suite (20 tests)
 # Validates health checks, cookie auth, farm CRUD, Warabandi, soil physics, and phenology
 cd backend
 PYTHONPATH=../data-engine:app:backend pytest tests/ -v
@@ -195,16 +176,6 @@ npm run build
 | **Orbital Imagery** | NASA MODIS Terra (MOD13Q1) | 16-Day Composite | 250m NDVI & EVI vegetation indices |
 | **Soil Texture** | [ISRIC SoilGrids 2.0](https://soilgrids.org) | 250m Global Grid | Sand, Silt, Clay fractions, Organic matter |
 | **Climate Normals** | NASA POWER (MERRA-2) | 30-Year Historical | Baseline temperature & precipitation deviations |
-
----
-
-## Localization
-
-AgriTwin provides native **Punjabi (پنجابی / Shahmukhi)** localization alongside English:
-- Full coverage across UI controls, labels, indicators, charts, and modals.
-- Crop names in local dialect: *کنک (Wheat), چاول (Rice), پھٹی (Cotton), گنا (Sugarcane), چھلی (Maize)*.
-- Agricultural growth stages: *اگاؤ (Emergence), شگوفے (Tillering), گنڈھ بننا (Jointing), گوپھ (Booting), بور (Flowering), دانہ بھرائی (Grain Filling), پکائی (Maturity)*.
-- Toggle anytime via the `ENG / پنجابی` button with persistent language preference and RTL layout styling.
 
 ---
 
