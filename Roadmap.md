@@ -12,7 +12,7 @@ Roughly 75–80% of a working MVP — impressively complete:
 | AI recommendations (Gemini + fallback) | ✅ Done, history-grounded |
 | Full dashboard UI + farm detail/history pages | ✅ Done |
 | JWT auth (backend + login page + token-aware API client) | ⚠️ Built but not enforced — farm endpoints hardcode user_id=1 (farms.py) |
-| Tests | ❌ None |
+| Tests | ✅ Done (Pytest + FastAPI TestClient + Node translation tests + GitHub Actions CI) |
 | Migrations / deployment packaging | ✅ Done — Alembic initialized with initial_schema & PostGIS documentation |
 | Background data ingestion | ❌ Data only persists when someone loads a farm — no scheduler |
 | Sentinel-2 hi-res imagery | ⚠️ Stubbed, needs credentials |
@@ -21,8 +21,8 @@ Roughly 75–80% of a working MVP — impressively complete:
 
 1. **Fix dead nav links** — ✅ Done: `/farms` Hub page added, API Docs pointed directly at Swagger `:8000/docs`.
 2. **Wire auth end-to-end** — everything exists; just add `Depends(get_current_user)` to farm/intelligence routes and drop the `user_id=1` hardcode. Half a day, biggest credibility jump.
-3. **Add a smoke-test suite** — pytest + FastAPI TestClient: health check, register/login, farm CRUD, and a mocked intelligence call. Even ~10 tests transform hackathon code into maintainable code.
-4. **Add `.env.example` files** (backend + frontend) and make `SECRET_KEY` required — it's currently a hardcoded default with `DEBUG=True`.
+3. **Add a smoke-test suite** — ✅ Done: Pytest + TestClient suite covering health, JWT auth, farm CRUD, AgriCore 5-dimension scoring, phenology calculation, bilingual Punjabi recommendations, and GitHub Actions CI.
+4. **Add `.env.example` files** — ✅ Done: `backend/.env.example` and `frontend/.env.example` added with documentation.
 5. **Auto-derive growth stage from sowing date** — ✅ Done: `crop_knowledge.derive_growth_stage` computes exact stage and DAS from knowledge tables.
 6. **Dockerize the full stack** — add backend/frontend Dockerfiles to docker-compose so `docker compose up` runs everything, not just the DB.
 7. **Introduce Alembic** (or at minimum a documented `DATABASE_URL` switch) — ✅ Done: Alembic migrations configured, versioned initial schema, and `DATABASE_SETUP.md` documentation added.

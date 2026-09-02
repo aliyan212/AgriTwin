@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --experimental-strip-types --test src/lib/__tests__/*.test.ts"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.22",

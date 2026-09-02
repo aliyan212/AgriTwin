@@ -121,6 +121,25 @@ Then run `alembic upgrade head`.
 
 ---
 
+## 🧪 Testing & Quality Assurance
+
+AgriTwin features an automated test suite across both the Python analytics backend and Next.js frontend:
+
+```bash
+# 1. Run Backend Pytest Suite (Health, Auth, Farm CRUD, AgriCore scoring & phenology)
+cd backend
+PYTHONPATH=../data-engine:app .venv312/bin/pytest tests/ -v
+
+# 2. Run Frontend Localization & Dictionary Parity Tests
+cd ../frontend
+npm test
+```
+
+### GitHub Actions CI
+Every commit and pull request to `main` automatically runs our GitHub Actions workflow ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) testing both backend and frontend suites.
+
+---
+
 ## 📡 Data Sources & Provenance
 
 | Feed | Provider | Coverage | Metric |
@@ -147,3 +166,4 @@ AgriTwin AI features a native **Punjabi (پنجابی / Shahmukhi)** engine tail
 ## 📜 License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
