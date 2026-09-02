@@ -31,7 +31,7 @@ export default function ConfirmModal({
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div
-        className={`relative w-full max-w-md rounded-2xl border p-6 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-200 ${
+        className={`relative w-full max-w-md rounded-2xl border p-5 sm:p-6 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-200 ${
           isDestructive
             ? "border-rose-500/30 bg-panel/95 text-ink"
             : "border-brand/30 bg-panel/95 text-ink"
@@ -64,12 +64,12 @@ export default function ConfirmModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-6 flex items-center gap-3">
+        <div className="mt-6 flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="flex-1 rounded-xl border border-ink/10 bg-ink/5 px-4 py-2.5 text-xs font-semibold text-mist hover:bg-ink/10 hover:text-ink transition-colors disabled:opacity-50"
+            className="flex-1 rounded-xl border border-ink/10 bg-ink/5 px-4 py-2.5 text-xs font-semibold text-mist hover:bg-ink/10 hover:text-ink transition-colors disabled:opacity-50 text-center"
           >
             {cancelText}
           </button>
@@ -77,14 +77,14 @@ export default function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all disabled:opacity-50 ${
+            className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all disabled:opacity-50 text-center ${
               isDestructive
                 ? "bg-gradient-to-b from-rose-500 to-rose-700 text-white shadow-[0_4px_16px_rgba(244,63,94,0.35)] hover:shadow-[0_4px_24px_rgba(244,63,94,0.55)]"
                 : "bg-gradient-to-b from-emerald-400 to-emerald-600 text-abyss shadow-[0_4px_16px_rgba(16,185,129,0.35)] hover:shadow-[0_4px_24px_rgba(16,185,129,0.55)]"
             }`}
           >
-            {loading && <span className="h-3 w-3 rounded-full border-2 border-white border-r-transparent animate-spin" />}
-            <span>{loading ? "Deleting Node…" : confirmText}</span>
+            {loading && <span className="h-3 w-3 rounded-full border-2 border-white border-r-transparent animate-spin shrink-0" />}
+            <span className="whitespace-nowrap">{loading ? "Deleting Node…" : confirmText}</span>
           </button>
         </div>
       </div>

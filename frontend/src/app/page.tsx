@@ -415,43 +415,43 @@ export default function DashboardPage() {
           </div>
 
           {selectedFarm && (
-            <div className="flex items-center justify-between sm:justify-start gap-1 rounded-xl border border-ink/10 bg-ink/[0.03] p-1 w-full sm:w-auto shadow-sm">
+            <div className="flex items-center justify-between sm:justify-start gap-1 rounded-xl border border-ink/10 bg-ink/[0.03] p-1 w-full sm:w-auto shadow-sm overflow-x-auto min-w-0">
               <Link
                 href={`/farms/${selectedFarm.id}`}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-ink transition-all hover:bg-brand/12 hover:text-brand active:scale-95"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-2 sm:px-3 py-1.5 text-xs font-semibold text-ink transition-all hover:bg-brand/12 hover:text-brand active:scale-95 whitespace-nowrap shrink-0"
               >
                 <Icon name="activity" size={13} className="text-brand shrink-0" />
-                <span className="whitespace-nowrap">{t("viewAnalytics", "Full Analytics")}</span>
+                <span>{t("viewAnalytics", "Full Analytics")}</span>
               </Link>
 
               <Link
                 href={`/farms/${selectedFarm.id}/history`}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-mist transition-all hover:bg-ink/6 hover:text-ink active:scale-95"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-2 sm:px-3 py-1.5 text-xs font-semibold text-mist transition-all hover:bg-ink/6 hover:text-ink active:scale-95 whitespace-nowrap shrink-0"
                 title="Field Observation History"
               >
                 <Icon name="clock" size={13} className="text-dim shrink-0" />
-                <span className="whitespace-nowrap">{t("viewHistory", "History Log")}</span>
+                <span>{t("viewHistory", "History Log")}</span>
               </Link>
 
               <div className="h-4 w-px bg-ink/10 shrink-0 mx-0.5" />
 
               {isOfficer ? (
                 <div
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-mist/60 bg-ink/[0.02] border border-ink/6 cursor-not-allowed"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-mist/60 bg-ink/[0.02] border border-ink/6 cursor-not-allowed whitespace-nowrap shrink-0"
                   title="Field deletion is restricted to registered landowners (Farmer Mode only)."
                 >
                   <Icon name="check" size={12} className="shrink-0 text-sky-400" />
-                  <span className="whitespace-nowrap">{isUrdu ? "محفوظ ڈیٹا" : "Owner Protected"}</span>
+                  <span>{isUrdu ? "محفوظ ڈیٹا" : "Owner Protected"}</span>
                 </div>
               ) : (
                 <button
                   onClick={() => setShowDeleteModal(true)}
                   disabled={deleting}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 transition-all disabled:opacity-50 active:scale-95"
-                  title="Delete Selected Farm"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 transition-all disabled:opacity-50 active:scale-95 whitespace-nowrap shrink-0"
+                  title="Delete Selected Farm Node"
                 >
                   <Icon name="trash" size={13} className="shrink-0" />
-                  <span className="whitespace-nowrap">{t("deleteFarmNode", "Delete")}</span>
+                  <span>{t("deleteShort", "Delete")}</span>
                 </button>
               )}
             </div>

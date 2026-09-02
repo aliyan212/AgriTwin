@@ -177,7 +177,7 @@ export default function FarmDetailPage() {
             title="Delete this farm"
           >
             <Icon name="trash" size={13} />
-            <span>{t("deleteFarmNode", "Delete Farm")}</span>
+            <span>{t("deleteShort", "Delete")}</span>
           </button>
         </div>
       </div>
