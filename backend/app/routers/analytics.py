@@ -15,12 +15,13 @@ from app.models import (
     SatelliteObservation,
     WeatherRecord,
 )
-from app.schemas import RecommendationResponse
+from app.schemas import RecommendationResponse, WarabandiAdviceResponse, WarabandiConfigUpdate
 from app.services.weather_service import weather_service
 
 # AgriCore imports (from data-engine directory, added to sys.path in main.py)
 import agricore
 import crop_knowledge
+import warabandi_engine
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -310,3 +311,94 @@ def _safe_index(lst: list | None, idx: int):
     if lst and idx < len(lst):
         return lst[idx]
     return None
+
+
+# ── Warabandi (Canal Water Turn) & Energy Cost Optimizer ──────────────────────
+@router.get("/warabandi/{farm_id}", response_model=WarabandiAdviceResponse)
+async def get_warabandi_advice(farm_id: int, db: Session = Depends(get_db)):
+    """Evaluate Warabandi canal turn schedule and groundwater energy cost optimization."""
+    farm = _get_farm_or_404(db, farm_id)
+
+    # Active crop
+    latest_crop = (
+        db.query(Crop)
+        .filter(Crop.farm_id == farm.id)
+        .order_by(Crop.id.desc())
+        .first()
+    )
+    crop_name = latest_crop.crop_name if latest_crop else "Wheat"
+    growth_stage = latest_crop.growth_stage if latest_crop else "Grain Filling"
+
+    rain_48h = 0.0
+    et0_val = 4.0
+    soil_moisture = 0.22
+
+    try:
+        weather_data = await weather_service.get_forecast_open_meteo(farm.latitude, farm.longitude, days=3)
+        daily = weather_data.get("daily", {})
+        rain_list = daily.get("precipitation_sum", [])
+        rain_48h = sum(rain_list[:2]) if len(rain_list) >= 2 else (rain_list[0] if rain_list else 0.0)
+
+        et0_list = daily.get("et0_fao_evapotranspiration", [])
+        if et0_list:
+            et0_val = et0_list[0]
+
+        curr = weather_data.get("current", {})
+        if curr.get("soil_moisture_0_to_7cm") is not None:
+            soil_moisture = curr.get("soil_moisture_0_to_7cm")
+    except Exception:
+        # Fallback to local observation records
+        latest_weather = (
+            db.query(WeatherRecord)
+            .filter(WeatherRecord.farm_id == farm.id)
+            .order_by(WeatherRecord.id.desc())
+            .first()
+        )
+        if latest_weather and latest_weather.soil_moisture_0_to_7cm is not None:
+            soil_moisture = latest_weather.soil_moisture_0_to_7cm
+
+    advice = warabandi_engine.evaluate_warabandi_irrigation(
+        farm_id=farm.id,
+        farm_name=farm.name,
+        area_acres=farm.area_acres or 10.0,
+        crop_name=crop_name,
+        growth_stage=growth_stage,
+        canal_name=farm.canal_name or "Lower Bari Doab Canal",
+        canal_turn_day=farm.canal_turn_day or "Thursday",
+        canal_turn_time=farm.canal_turn_time or "02:00",
+        canal_turn_duration_hours=farm.canal_turn_duration_hours or 4.0,
+        tubewell_power_source=farm.tubewell_power_source or "diesel",
+        tubewell_hourly_cost_pkr=farm.tubewell_hourly_cost_pkr or 1400.0,
+        current_soil_moisture=soil_moisture,
+        et0_mm=et0_val,
+        forecast_rain_48h_mm=rain_48h,
+    )
+    return advice
+
+
+@router.put("/warabandi/{farm_id}/config", response_model=WarabandiAdviceResponse)
+async def update_warabandi_config(
+    farm_id: int, payload: WarabandiConfigUpdate, db: Session = Depends(get_db)
+):
+    """Update farm Warabandi schedule and tubewell fuel preferences."""
+    farm = _get_farm_or_404(db, farm_id)
+
+    if payload.canal_name is not None:
+        farm.canal_name = payload.canal_name
+    if payload.canal_turn_day is not None:
+        farm.canal_turn_day = payload.canal_turn_day
+    if payload.canal_turn_time is not None:
+        farm.canal_turn_time = payload.canal_turn_time
+    if payload.canal_turn_duration_hours is not None:
+        farm.canal_turn_duration_hours = payload.canal_turn_duration_hours
+    if payload.tubewell_power_source is not None:
+        farm.tubewell_power_source = payload.tubewell_power_source
+    if payload.tubewell_hourly_cost_pkr is not None:
+        farm.tubewell_hourly_cost_pkr = payload.tubewell_hourly_cost_pkr
+
+    db.add(farm)
+    db.commit()
+    db.refresh(farm)
+
+    return await get_warabandi_advice(farm_id, db)
+

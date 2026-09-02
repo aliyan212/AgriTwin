@@ -280,6 +280,30 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
+export interface WarabandiAdvice {
+  farm_id: number;
+  farm_name: string;
+  canal_name: string;
+  canal_turn_day: string;
+  canal_turn_time: string;
+  canal_turn_duration_hours: number;
+  hours_until_turn: number;
+  days_until_turn: number;
+  next_turn_formatted: string;
+  next_turn_formatted_ur: string;
+  water_demand_inches: number;
+  water_demand_m3: number;
+  current_soil_moisture_pct: number;
+  upcoming_rain_48h_mm: number;
+  hold_tubewell_recommended: boolean;
+  potential_savings_pkr: number;
+  tubewell_power_source: string;
+  action_en: string;
+  action_ur: string;
+  reasoning_en: string;
+  reasoning_ur: string;
+}
+
 // ── Farms ────────────────────────────────────────────────────────────────────
 export const api = {
   // Farms
@@ -338,6 +362,23 @@ export const api = {
   getCropKnowledge: () => request<CropKnowledge[]>("/analytics/crops/knowledge"),
   getFarmHistory: (farmId: number) =>
     request<FarmHistory>(`/analytics/history/${farmId}`),
+  getWarabandiAdvice: (farmId: number) =>
+    request<WarabandiAdvice>(`/analytics/warabandi/${farmId}`),
+  updateWarabandiConfig: (
+    farmId: number,
+    config: {
+      canal_name?: string;
+      canal_turn_day?: string;
+      canal_turn_time?: string;
+      canal_turn_duration_hours?: number;
+      tubewell_power_source?: string;
+      tubewell_hourly_cost_pkr?: number;
+    }
+  ) =>
+    request<WarabandiAdvice>(`/analytics/warabandi/${farmId}/config`, {
+      method: "PUT",
+      body: JSON.stringify(config),
+    }),
 
   // Health
   healthCheck: () => request<{ status: string }>("/health").catch(() => ({ status: "offline" })),

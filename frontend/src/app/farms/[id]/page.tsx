@@ -17,6 +17,7 @@ import DataProvenance from "@/components/DataProvenance";
 import Icon from "@/components/Icon";
 import ConfirmModal from "@/components/ConfirmModal";
 import LazyCard from "@/components/LazyCard";
+import WarabandiAdvisor from "@/components/WarabandiAdvisor";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getLocalizedCropName, getLocalizedStageName } from "@/lib/translations";
 
@@ -261,6 +262,11 @@ export default function FarmDetailPage() {
             )}
           </div>
         </div>
+      </LazyCard>
+
+      {/* ── Warabandi Canal Water & Tubewell Energy Optimizer ───────────── */}
+      <LazyCard delayMs={75} className="mt-6">
+        <WarabandiAdvisor farmId={farmId} />
       </LazyCard>
 
       {/* ── Weather & 7-Day Forecast ──────────────────────────────────────── */}

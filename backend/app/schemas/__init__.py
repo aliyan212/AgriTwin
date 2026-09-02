@@ -45,6 +45,12 @@ class FarmCreate(BaseModel):
     province: str = "Punjab"
     latitude: float | None = None
     longitude: float | None = None
+    canal_name: str | None = "Lower Bari Doab Canal"
+    canal_turn_day: str | None = "Thursday"
+    canal_turn_time: str | None = "02:00"
+    canal_turn_duration_hours: float | None = 4.0
+    tubewell_power_source: str | None = "diesel"
+    tubewell_hourly_cost_pkr: float | None = 1400.0
 
 
 class FarmResponse(BaseModel):
@@ -56,9 +62,48 @@ class FarmResponse(BaseModel):
     province: str
     latitude: float | None
     longitude: float | None
+    canal_name: str | None
+    canal_turn_day: str | None
+    canal_turn_time: str | None
+    canal_turn_duration_hours: float | None
+    tubewell_power_source: str | None
+    tubewell_hourly_cost_pkr: float | None
     created_at: datetime.datetime
 
     model_config = {"from_attributes": True}
+
+
+class WarabandiConfigUpdate(BaseModel):
+    canal_name: str | None = None
+    canal_turn_day: str | None = None
+    canal_turn_time: str | None = None
+    canal_turn_duration_hours: float | None = None
+    tubewell_power_source: str | None = None
+    tubewell_hourly_cost_pkr: float | None = None
+
+
+class WarabandiAdviceResponse(BaseModel):
+    farm_id: int
+    farm_name: str
+    canal_name: str
+    canal_turn_day: str
+    canal_turn_time: str
+    canal_turn_duration_hours: float
+    hours_until_turn: float
+    days_until_turn: int
+    next_turn_formatted: str
+    next_turn_formatted_ur: str
+    water_demand_inches: float
+    water_demand_m3: float
+    current_soil_moisture_pct: float
+    upcoming_rain_48h_mm: float
+    hold_tubewell_recommended: bool
+    potential_savings_pkr: float
+    tubewell_power_source: str
+    action_en: str
+    action_ur: str
+    reasoning_en: str
+    reasoning_ur: str
 
 
 # ── Crop ──────────────────────────────────────────────────────────────────────

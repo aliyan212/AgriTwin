@@ -46,6 +46,13 @@ class Farm(Base):
     province = Column(String(100), default="Punjab")
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+    # Warabandi (Canal Water Turn) & Tubewell Configuration
+    canal_name = Column(String(120), nullable=True, default="Lower Bari Doab Canal")
+    canal_turn_day = Column(String(20), nullable=True, default="Thursday")
+    canal_turn_time = Column(String(10), nullable=True, default="02:00")
+    canal_turn_duration_hours = Column(Float, default=4.0)
+    tubewell_power_source = Column(String(30), default="diesel")
+    tubewell_hourly_cost_pkr = Column(Float, default=1400.0)
     created_at = Column(DateTime, default=func.now())
 
     owner = relationship("User", back_populates="farms")
