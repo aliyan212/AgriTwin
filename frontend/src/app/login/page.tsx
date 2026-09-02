@@ -147,11 +147,10 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedRole("farmer")}
-                      className={`flex items-center gap-2 rounded-xl p-2.5 border text-xs font-semibold transition-all ${
-                        selectedRole === "farmer"
+                      className={`flex items-center gap-2 rounded-xl p-2.5 border text-xs font-semibold transition-all ${selectedRole === "farmer"
                           ? "border-brand/40 bg-brand/15 text-brand shadow-sm"
                           : "border-ink/8 bg-ink/[0.02] text-mist hover:text-ink hover:bg-ink/5"
-                      }`}
+                        }`}
                     >
                       <Icon name="wheat" size={14} />
                       <div className="text-left">
@@ -162,11 +161,10 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedRole("extension_officer")}
-                      className={`flex items-center gap-2 rounded-xl p-2.5 border text-xs font-semibold transition-all ${
-                        selectedRole === "extension_officer"
+                      className={`flex items-center gap-2 rounded-xl p-2.5 border text-xs font-semibold transition-all ${selectedRole === "extension_officer"
                           ? "border-sky-400/40 bg-sky-500/15 text-sky-400 shadow-sm"
                           : "border-ink/8 bg-ink/[0.02] text-mist hover:text-ink hover:bg-ink/5"
-                      }`}
+                        }`}
                     >
                       <Icon name="activity" size={14} />
                       <div className="text-left">
