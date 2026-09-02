@@ -19,8 +19,87 @@ from app.routers import analytics, auth, farms, intelligence, satellite, weather
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create tables on startup (dev convenience). Use Alembic for production."""
+    """Create tables on startup and seed initial demo farms if database is empty."""
+    import datetime
+    from app.database import SessionLocal
+    from app.models import Crop, Farm, User
+
     Base.metadata.create_all(bind=engine)
+
+    # Seed demo farms on a fresh production/local database
+    db = SessionLocal()
+    try:
+        if db.query(Farm).count() == 0:
+            demo_user = db.query(User).first()
+            if not demo_user:
+                demo_user = User(
+                    name="Chaudhry Tariq (Demo Farmer)",
+                    email="farmer@agritwin.pk",
+                    hashed_password="$2b$12$e8kZ1zWqQkC7fN9e1p7.aejKDf0YgqA8a91Uv2O/6tP3y0dM9x4S",
+                    role="farmer",
+                )
+                db.add(demo_user)
+                db.commit()
+                db.refresh(demo_user)
+
+            farm1 = Farm(
+                user_id=demo_user.id,
+                name="Okara Green Fields (چک 45 دیپالپور)",
+                district="Okara",
+                province="Punjab",
+                latitude=30.81,
+                longitude=73.45,
+                area_acres=12.5,
+                canal_name="Lower Bari Doab Canal (LBDC)",
+                canal_turn_day="Thursday",
+                canal_turn_time="02:00",
+                canal_turn_duration_hours=4.5,
+                tubewell_power_source="diesel",
+                tubewell_hourly_cost_pkr=1400.0,
+            )
+            farm2 = Farm(
+                user_id=demo_user.id,
+                name="Faisalabad Rechna Twin (سمندری روڈ)",
+                district="Faisalabad",
+                province="Punjab",
+                latitude=31.41,
+                longitude=73.07,
+                area_acres=20.0,
+                canal_name="Lower Chenab Canal (LCC)",
+                canal_turn_day="Monday",
+                canal_turn_time="04:30",
+                canal_turn_duration_hours=6.0,
+                tubewell_power_source="grid",
+                tubewell_hourly_cost_pkr=650.0,
+            )
+            db.add_all([farm1, farm2])
+            db.commit()
+            db.refresh(farm1)
+            db.refresh(farm2)
+
+            crop1 = Crop(
+                farm_id=farm1.id,
+                crop_name="Wheat",
+                variety="Faisalabad-2008",
+                sowing_date=datetime.datetime.now() - datetime.timedelta(days=75),
+                season="Rabi",
+                growth_stage="Grain Filling",
+            )
+            crop2 = Crop(
+                farm_id=farm2.id,
+                crop_name="Rice (Basmati)",
+                variety="Super Basmati",
+                sowing_date=datetime.datetime.now() - datetime.timedelta(days=60),
+                season="Kharif",
+                growth_stage="Panicle Initiation",
+            )
+            db.add_all([crop1, crop2])
+            db.commit()
+    except Exception as e:
+        print(f"Startup demo seed note: {e}")
+    finally:
+        db.close()
+
     yield
 
 
@@ -31,10 +110,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── CORS ──────────────────────────────────────────────────────────────────────
+# ── CORS: Allows local dev, Render, and any Vercel deployment URL ─────────────
+cors_origins = [o for o in settings.CORS_ORIGINS if o != "*"]
+if not cors_origins:
+    cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=cors_origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|.*\.vercel\.app|.*\.onrender\.com)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

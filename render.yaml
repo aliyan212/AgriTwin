@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: agritwin-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: PYTHONPATH=data-engine:backend/app uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///./agritwin.db
+      - key: CORS_ORIGINS
+        value: "http://localhost:3000"
