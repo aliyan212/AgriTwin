@@ -4,23 +4,22 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Crop, Farm
-from app.routers.auth import get_current_user
+from app.models import Crop, Farm, User
+from app.routers.auth import get_optional_current_user
 from app.schemas import CropCreate, CropResponse, FarmCreate, FarmResponse
 import warabandi_engine
 
 router = APIRouter(prefix="/farms", tags=["farms"])
 
 
-def _get_user_id(user=None) -> int:
-    """Extract user_id from JWT user if present, else default to 1."""
-    return user.id if user else 1
-
-
 # ── Farm CRUD ─────────────────────────────────────────────────────────────────
 @router.post("/", response_model=FarmResponse, status_code=201)
-def create_farm(payload: FarmCreate, db: Session = Depends(get_db)):
-    """Create a new farm. Uses user_id=1 until auth is wired."""
+def create_farm(
+    payload: FarmCreate,
+    user: User | None = Depends(get_optional_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a new farm assigned to current authenticated user."""
     data = payload.model_dump()
     if not data.get("canal_name"):
         data["canal_name"] = warabandi_engine.infer_canal_from_location(
@@ -28,7 +27,8 @@ def create_farm(payload: FarmCreate, db: Session = Depends(get_db)):
             lat=data.get("latitude"),
             lon=data.get("longitude"),
         )
-    farm = Farm(user_id=1, **data)
+    user_id = user.id if user else 1
+    farm = Farm(user_id=user_id, **data)
     db.add(farm)
     db.commit()
     db.refresh(farm)
@@ -36,9 +36,17 @@ def create_farm(payload: FarmCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[FarmResponse])
-def list_farms(db: Session = Depends(get_db)):
-    """List all farms (user_id=1 until auth is wired)."""
-    return db.query(Farm).filter(Farm.user_id == 1).all()
+def list_farms(
+    user: User | None = Depends(get_optional_current_user),
+    db: Session = Depends(get_db),
+):
+    """List farms based on role: Officers see all Punjab farms; Farmers see their own."""
+    if user and user.role == "extension_officer":
+        return db.query(Farm).all()
+    elif user:
+        user_farms = db.query(Farm).filter(Farm.user_id == user.id).all()
+        return user_farms if user_farms else db.query(Farm).all()
+    return db.query(Farm).all()
 
 
 @router.get("/{farm_id}", response_model=FarmResponse)
@@ -50,7 +58,17 @@ def get_farm(farm_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{farm_id}", status_code=204)
-def delete_farm(farm_id: int, db: Session = Depends(get_db)):
+def delete_farm(
+    farm_id: int,
+    user: User | None = Depends(get_optional_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a farm node. Restricted for Extension Officers (read-only audit)."""
+    if user and user.role == "extension_officer":
+        raise HTTPException(
+            status_code=403,
+            detail="Field deletion is restricted to registered landowners (Farmer Mode only).",
+        )
     farm = db.query(Farm).get(farm_id)
     if not farm:
         raise HTTPException(status_code=404, detail="Farm not found")

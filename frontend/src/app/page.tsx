@@ -8,6 +8,7 @@ import {
   type HealthScore,
   type Recommendation,
   type ForecastDay,
+  type AuthUser,
 } from "@/lib/api";
 import Link from "next/link";
 import HealthScoreCard from "@/components/HealthScoreCard";
@@ -136,6 +137,7 @@ function inferCanalFromLocation(
 
 export default function DashboardPage() {
   const { t, isUrdu } = useLanguage();
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -200,8 +202,19 @@ export default function DashboardPage() {
     }
   };
 
-  // ── Load farms on mount ─────────────────────────────────────────────────
+  // ── Load user and farms on mount ────────────────────────────────────────
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("agri_user");
+      if (stored) {
+        try {
+          setCurrentUser(JSON.parse(stored));
+        } catch {
+          // ignore
+        }
+      }
+    }
+
     api.listFarms().then((list) => {
       setFarms(list);
       // Auto-select first farm if available for instant data
@@ -351,8 +364,41 @@ export default function DashboardPage() {
     }
   };
 
+  const isOfficer = currentUser?.role === "extension_officer";
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      {/* ── Extension Officer Regional Surveillance Mode Banner ───────────── */}
+      {isOfficer && (
+        <div className="mb-6 rounded-2xl border border-sky-500/30 bg-sky-500/10 p-4 backdrop-blur-md shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/20 text-sky-400 ring-1 ring-sky-400/30 shrink-0">
+                <Icon name="activity" size={20} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold text-ink">
+                    {isUrdu ? "ڈائریکٹوریٹ جنرل آف ایگریکلچر ایکسٹینشن پنجاب" : "Directorate General of Agriculture Extension Punjab"}
+                  </h2>
+                  <span className="rounded-md border border-sky-400/30 bg-sky-500/20 px-2 py-0.5 font-mono text-[10px] font-semibold text-sky-400 uppercase">
+                    {isUrdu ? "نگرانی موڈ" : "Supervisory Mode"}
+                  </span>
+                </div>
+                <p className="text-xs text-mist mt-0.5">
+                  {isUrdu
+                    ? "پنجاب دے تمام ضلعی ڈیجیٹل ٹوئن فارمز دی علاقائی نگرانی و تجزیہ فعال ہے۔"
+                    : "Regional surveillance active across all Punjab district farm twins · Multi-farm agronomic telemetry"}
+                </p>
+              </div>
+            </div>
+            <span className="rounded-xl border border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-xs font-mono text-sky-300 self-start sm:self-auto">
+              {farms.length} {isUrdu ? "ضلعی نوڈز زیرِ نگرانی" : "District Nodes Supervised"}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ── Page Header / Command Bar ─────────────────────────────────────── */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -399,15 +445,25 @@ export default function DashboardPage() {
 
               <div className="h-4 w-px bg-ink/10 shrink-0 mx-0.5" />
 
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                disabled={deleting}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 transition-all disabled:opacity-50 active:scale-95"
-                title="Delete Selected Farm"
-              >
-                <Icon name="trash" size={13} className="shrink-0" />
-                <span className="whitespace-nowrap">{t("deleteFarmNode", "Delete")}</span>
-              </button>
+              {isOfficer ? (
+                <div
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-mist/60 bg-ink/[0.02] border border-ink/6 cursor-not-allowed"
+                  title="Field deletion is restricted to registered landowners (Farmer Mode only)."
+                >
+                  <Icon name="check" size={12} className="shrink-0 text-sky-400" />
+                  <span className="whitespace-nowrap">{isUrdu ? "محفوظ ڈیٹا" : "Owner Protected"}</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={deleting}
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 transition-all disabled:opacity-50 active:scale-95"
+                  title="Delete Selected Farm"
+                >
+                  <Icon name="trash" size={13} className="shrink-0" />
+                  <span className="whitespace-nowrap">{t("deleteFarmNode", "Delete")}</span>
+                </button>
+              )}
             </div>
           )}
         </div>

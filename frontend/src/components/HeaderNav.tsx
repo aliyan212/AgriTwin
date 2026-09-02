@@ -47,7 +47,7 @@ export default function HeaderNav() {
       localStorage.removeItem("agri_token");
       localStorage.removeItem("agri_user");
       setUser(null);
-      window.location.href = "/";
+      window.location.href = "/login";
     }
   };
 
