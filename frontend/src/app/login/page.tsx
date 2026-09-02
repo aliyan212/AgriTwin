@@ -36,7 +36,7 @@ export default function LoginPage() {
       const res = await api.login({ email, password });
       localStorage.setItem("agri_token", res.access_token);
       localStorage.setItem("agri_user", JSON.stringify(res.user));
-      router.push("/");
+      window.location.href = "/";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed");
     } finally {

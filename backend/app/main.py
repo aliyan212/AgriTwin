@@ -26,24 +26,39 @@ async def lifespan(app: FastAPI):
 
     Base.metadata.create_all(bind=engine)
 
-    # Seed demo farms on a fresh production/local database
+    # Seed demo users on a fresh production/local database (password: password123)
+    pwd_hash = "$2b$12$1kLIODq1P4Z1OwrkeE1QmOVaJg.aGb.Zq5lN41rbldfYN6UcSovNS"
     db = SessionLocal()
     try:
-        if db.query(Farm).count() == 0:
-            demo_user = db.query(User).first()
-            if not demo_user:
-                demo_user = User(
-                    name="Chaudhry Tariq (Demo Farmer)",
-                    email="farmer@agritwin.pk",
-                    hashed_password="$2b$12$e8kZ1zWqQkC7fN9e1p7.aejKDf0YgqA8a91Uv2O/6tP3y0dM9x4S",
-                    role="farmer",
-                )
-                db.add(demo_user)
-                db.commit()
-                db.refresh(demo_user)
+        farmer = db.query(User).filter(User.email == "farmer@agritwin.pk").first()
+        if not farmer:
+            farmer = User(
+                name="Ahmad Khan (Punjab Farmer)",
+                email="farmer@agritwin.pk",
+                phone="03001234567",
+                hashed_password=pwd_hash,
+                role="farmer",
+            )
+            db.add(farmer)
+            db.commit()
+            db.refresh(farmer)
 
+        officer = db.query(User).filter(User.email == "officer@agritwin.pk").first()
+        if not officer:
+            officer = User(
+                name="Dr. Tariq Mahmood (Agri Officer)",
+                email="officer@agritwin.pk",
+                phone="03019876543",
+                hashed_password=pwd_hash,
+                role="extension_officer",
+            )
+            db.add(officer)
+            db.commit()
+            db.refresh(officer)
+
+        if db.query(Farm).count() == 0:
             farm1 = Farm(
-                user_id=demo_user.id,
+                user_id=farmer.id,
                 name="Okara Green Fields (چک 45 دیپالپور)",
                 district="Okara",
                 province="Punjab",
