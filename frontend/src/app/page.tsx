@@ -499,23 +499,25 @@ export default function DashboardPage() {
                   )}
 
                   {/* ── Warabandi Canal & Tubewell Setup Accordion ────────────── */}
-                  <div className="rounded-xl border border-cyan-500/20 bg-cyan-950/15 p-3">
+                  <div className="rounded-xl border border-ink/10 bg-ink/[0.03] p-3 transition-colors">
                     <button
                       type="button"
                       onClick={() => setShowTurnConfig(!showTurnConfig)}
                       className="flex w-full items-center justify-between text-left font-semibold text-ink"
                     >
-                      <span className="flex items-center gap-1.5 text-xs text-cyan-300">
-                        <Icon name="droplet" size={13} className="text-cyan-400" />
-                        {isUrdu ? "وارابندی تے ٹیوب ویل سیٹنگز (اختیاری)" : "Canal Turn & Tubewell (Optional)"}
+                      <span className="flex items-center gap-1.5 text-xs text-ink font-semibold">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-md bg-brand/15 text-brand">
+                          <Icon name="droplet" size={12} />
+                        </span>
+                        <span>{isUrdu ? "وارابندی تے ٹیوب ویل سیٹنگز (اختیاری)" : "Canal Turn & Tubewell (Optional)"}</span>
                       </span>
-                      <span className="text-[10px] text-cyan-400 underline font-medium">
-                        {showTurnConfig ? (isUrdu ? "بند کرو" : "Hide") : (isUrdu ? "واری سیٹ کرو" : "Configure Turn")}
+                      <span className="text-[10px] text-brand hover:underline font-medium">
+                        {showTurnConfig ? (isUrdu ? "بند کرو" : "Hide") : (isUrdu ? "سیٹ کرو" : "Configure")}
                       </span>
                     </button>
 
                     {showTurnConfig && (
-                      <div className="mt-3 space-y-3 border-t border-cyan-500/10 pt-3 animate-fade-in">
+                      <div className="mt-3 space-y-3 border-t border-ink/8 pt-3 animate-fade-in">
                         <div>
                           <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
                             {isUrdu ? "نہری ڈسٹری بیوٹری" : "Canal / Distributary"}
@@ -526,7 +528,7 @@ export default function DashboardPage() {
                             className="input-theme w-full"
                           >
                             {PUNJAB_CANALS.map((c) => (
-                              <option key={c} value={c} className="bg-abyss text-ink">
+                              <option key={c} value={c} className="bg-panel text-ink">
                                 {c}
                               </option>
                             ))}
@@ -544,7 +546,7 @@ export default function DashboardPage() {
                               className="input-theme w-full"
                             >
                               {WEEKDAYS.map((d) => (
-                                <option key={d.en} value={d.en} className="bg-abyss text-ink">
+                                <option key={d.en} value={d.en} className="bg-panel text-ink">
                                   {isUrdu ? `${d.ur} (${d.en})` : d.en}
                                 </option>
                               ))}
@@ -592,13 +594,13 @@ export default function DashboardPage() {
                               }}
                               className="input-theme w-full capitalize"
                             >
-                              <option value="diesel" className="bg-abyss text-ink">
+                              <option value="diesel" className="bg-panel text-ink">
                                 {isUrdu ? "ڈیزل جنریٹر" : "Diesel"}
                               </option>
-                              <option value="grid" className="bg-abyss text-ink">
+                              <option value="grid" className="bg-panel text-ink">
                                 {isUrdu ? "بجلی گرڈ" : "Electric Grid"}
                               </option>
-                              <option value="solar" className="bg-abyss text-ink">
+                              <option value="solar" className="bg-panel text-ink">
                                 {isUrdu ? "سولر پینل" : "Solar"}
                               </option>
                             </select>

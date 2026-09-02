@@ -103,11 +103,11 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
   const remHours = hoursRemaining % 24;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-ink/10 bg-abyss/80 p-6 shadow-xl backdrop-blur-xl transition-all hover:border-brand/30">
+    <div className="glass-panel p-5 sm:p-6 transition-all hover:border-brand/30">
       {/* ── Card Header ───────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/8 pb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/30">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 ring-1 ring-cyan-500/20">
             <Icon name="droplet" size={20} />
           </div>
           <div>
@@ -115,7 +115,7 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
               <h3 className="text-base font-bold text-ink">
                 {isUrdu ? "وارابندی تے ٹوب ویل بچت" : "Warabandi & Tubewell Optimizer"}
               </h3>
-              <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-cyan-300">
+              <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-cyan-700 dark:text-cyan-300">
                 {isUrdu ? "نہری واری" : "Canal Water Rights"}
               </span>
             </div>
@@ -127,7 +127,7 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
 
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 rounded-xl border border-ink/12 bg-ink/5 px-3 py-1.5 text-xs font-semibold text-mist hover:border-ink/20 hover:text-ink transition-colors"
+          className="flex items-center gap-1.5 rounded-xl border border-ink/10 bg-ink/5 px-3 py-1.5 text-xs font-semibold text-mist hover:border-ink/20 hover:text-ink transition-colors"
           title="Edit Canal Turn Schedule"
         >
           <Icon name="pencil" size={13} />
@@ -138,12 +138,12 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
       {/* ── Main Countdown & Hero Panel ───────────────────────────────────── */}
       <div className="mt-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
         {/* Next Turn Schedule Box */}
-        <div className="md:col-span-7 flex flex-col justify-between rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-950/30 to-abyss p-4">
+        <div className="md:col-span-7 flex flex-col justify-between rounded-xl border border-cyan-500/20 bg-cyan-500/5 dark:bg-cyan-950/25 p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-cyan-200/80">
+            <span className="text-xs font-semibold text-cyan-800 dark:text-cyan-200">
               {isUrdu ? "اگلی نہری واری" : "Next Scheduled Canal Turn"}
             </span>
-            <span className="font-mono text-xs text-cyan-400 font-semibold">
+            <span className="font-mono text-xs text-cyan-700 dark:text-cyan-400 font-bold">
               {advice.canal_turn_time}
             </span>
           </div>
@@ -152,7 +152,7 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
             <p className="text-lg font-bold text-ink">
               {isUrdu ? advice.next_turn_formatted_ur : advice.next_turn_formatted}
             </p>
-            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-300">
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 dark:bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-800 dark:text-cyan-300">
               <Icon name="clock" size={13} />
               <span>
                 {isUrdu
@@ -172,10 +172,11 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
 
         {/* Rupee Savings & Diesel Alert Box */}
         <div
-          className={`md:col-span-5 flex flex-col justify-between rounded-xl border p-4 transition-all ${advice.hold_tubewell_recommended
-              ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-200"
+          className={`md:col-span-5 flex flex-col justify-between rounded-xl border p-4 transition-all ${
+            advice.hold_tubewell_recommended
+              ? "border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/25 text-ink"
               : "border-ink/8 bg-ink/[0.02] text-mist"
-            }`}
+          }`}
         >
           <div>
             <div className="flex items-center justify-between">
@@ -192,7 +193,7 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
 
             <div className="mt-2">
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-extrabold text-brand font-mono">
+                <span className="text-2xl font-extrabold text-emerald-600 dark:text-brand font-mono">
                   Rs. {advice.potential_savings_pkr.toLocaleString()}
                 </span>
                 <span className="text-xs text-mist">{isUrdu ? "بچت" : "saved"}</span>
@@ -203,8 +204,8 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
                     ? `${advice.upcoming_rain_48h_mm} ملی میٹر بارش دی پیشگوئی`
                     : `${advice.upcoming_rain_48h_mm} mm rain expected in 48h`
                   : isUrdu
-                    ? "نہری پانی توں پہلاں ٹوب ویل نہ چلاؤ"
-                    : "Canal water turn covers current water deficit"}
+                  ? "نہری پانی توں پہلاں ٹوب ویل نہ چلاؤ"
+                  : "Canal water turn covers current water deficit"}
               </p>
             </div>
           </div>
@@ -219,8 +220,8 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
       </div>
 
       {/* ── AI Action Directive Banner ────────────────────────────────────── */}
-      <div className="mt-4 rounded-xl border border-brand/20 bg-brand/5 p-3.5 flex items-start gap-3">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand/20 text-brand shrink-0 mt-0.5">
+      <div className="mt-4 rounded-xl border border-brand/25 bg-brand/5 dark:bg-brand/10 p-3.5 flex items-start gap-3">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand/15 text-brand shrink-0 mt-0.5">
           <Icon name="spark" size={14} />
         </div>
         <div>
@@ -235,11 +236,11 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
 
       {/* ── Settings Modal ─────────────────────────────────────────────────── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-abyss/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-md rounded-2xl border border-ink/15 bg-abyss p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md rounded-2xl border border-brand/25 bg-panel p-6 shadow-2xl backdrop-blur-2xl">
             <div className="flex items-center justify-between border-b border-ink/10 pb-3">
               <h3 className="text-sm font-bold text-ink flex items-center gap-2">
-                <Icon name="droplet" size={16} className="text-cyan-400" />
+                <Icon name="droplet" size={16} className="text-cyan-500 dark:text-cyan-400" />
                 <span>{isUrdu ? "نہری واری سیٹنگز" : "Configure Warabandi Turn"}</span>
               </h3>
               <button
@@ -252,16 +253,16 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
 
             <form onSubmit={handleSaveConfig} className="mt-4 space-y-4 text-xs">
               <div>
-                <label className="block font-medium text-mist mb-1">
+                <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
                   {isUrdu ? "نہری ڈسٹری بیوٹری دا ناں" : "Canal / Distributary Name"}
                 </label>
                 <select
                   value={formData.canal_name}
                   onChange={(e) => setFormData({ ...formData, canal_name: e.target.value })}
-                  className="w-full rounded-xl border border-ink/15 bg-ink/5 px-3 py-2 text-ink focus:border-brand focus:outline-none"
+                  className="input-theme w-full"
                 >
                   {PUNJAB_CANALS.map((c) => (
-                    <option key={c} value={c} className="bg-abyss text-ink">
+                    <option key={c} value={c} className="bg-panel text-ink">
                       {c}
                     </option>
                   ))}
@@ -270,16 +271,16 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-medium text-mist mb-1">
+                  <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
                     {isUrdu ? "واری دا دن" : "Canal Turn Day"}
                   </label>
                   <select
                     value={formData.canal_turn_day}
                     onChange={(e) => setFormData({ ...formData, canal_turn_day: e.target.value })}
-                    className="w-full rounded-xl border border-ink/15 bg-ink/5 px-3 py-2 text-ink focus:border-brand focus:outline-none"
+                    className="input-theme w-full"
                   >
                     {WEEKDAYS.map((d) => (
-                      <option key={d.en} value={d.en} className="bg-abyss text-ink">
+                      <option key={d.en} value={d.en} className="bg-panel text-ink">
                         {isUrdu ? `${d.ur} (${d.en})` : d.en}
                       </option>
                     ))}
@@ -287,21 +288,21 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-mist mb-1">
+                  <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
                     {isUrdu ? "واری دا وقت" : "Start Time"}
                   </label>
                   <input
                     type="time"
                     value={formData.canal_turn_time}
                     onChange={(e) => setFormData({ ...formData, canal_turn_time: e.target.value })}
-                    className="w-full rounded-xl border border-ink/15 bg-ink/5 px-3 py-2 text-ink focus:border-brand focus:outline-none"
+                    className="input-theme w-full"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-medium text-mist mb-1">
+                  <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
                     {isUrdu ? "واری دا دورانیہ (گھنٹے)" : "Turn Duration (Hours)"}
                   </label>
                   <input
@@ -316,12 +317,12 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
                         canal_turn_duration_hours: parseFloat(e.target.value) || 4.0,
                       })
                     }
-                    className="w-full rounded-xl border border-ink/15 bg-ink/5 px-3 py-2 text-ink focus:border-brand focus:outline-none"
+                    className="input-theme w-full"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-medium text-mist mb-1">
+                  <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
                     {isUrdu ? "ٹوب ویل دا ایندھن" : "Tubewell Power Source"}
                   </label>
                   <select
@@ -338,15 +339,15 @@ export default function WarabandiAdvisor({ farmId }: WarabandiAdvisorProps) {
                               : 0.0,
                       })
                     }
-                    className="w-full rounded-xl border border-ink/15 bg-ink/5 px-3 py-2 text-ink focus:border-brand focus:outline-none capitalize"
+                    className="input-theme w-full capitalize"
                   >
-                    <option value="diesel" className="bg-abyss text-ink">
+                    <option value="diesel" className="bg-panel text-ink">
                       {isUrdu ? "ڈیزل جنریٹر (Diesel)" : "Diesel Generator"}
                     </option>
-                    <option value="grid" className="bg-abyss text-ink">
+                    <option value="grid" className="bg-panel text-ink">
                       {isUrdu ? "بجلی گرڈ (Electric Grid)" : "Electric Grid (WAPDA)"}
                     </option>
-                    <option value="solar" className="bg-abyss text-ink">
+                    <option value="solar" className="bg-panel text-ink">
                       {isUrdu ? "سولر ٹیوب ویل (Solar)" : "Solar Powered"}
                     </option>
                   </select>
