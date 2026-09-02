@@ -167,8 +167,17 @@ export default function HeaderNav() {
           {/* User Auth or Sign In (Desktop & Tablet) */}
           {user ? (
             <div className="hidden sm:flex items-center gap-2 rounded-xl border border-ink/10 bg-ink/4 p-1 pl-2.5">
-              <span className="text-xs font-medium text-ink truncate max-w-[120px]">
+              <span className="text-xs font-medium text-ink truncate max-w-[130px]">
                 {user.name}
+              </span>
+              <span
+                className={`rounded-md px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
+                  user.role === "extension_officer"
+                    ? "border border-sky-400/30 bg-sky-500/10 text-sky-400"
+                    : "border border-emerald-400/30 bg-emerald-500/10 text-brand"
+                }`}
+              >
+                {user.role === "extension_officer" ? "🏛️ Officer" : "🌱 Farmer"}
               </span>
               <button
                 onClick={handleLogout}
@@ -210,7 +219,18 @@ export default function HeaderNav() {
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-ink">{user.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-bold text-ink">{user.name}</p>
+                    <span
+                      className={`rounded px-1.5 py-0.2 text-[8px] font-semibold uppercase tracking-wider ${
+                        user.role === "extension_officer"
+                          ? "border border-sky-400/30 bg-sky-500/10 text-sky-400"
+                          : "border border-emerald-400/30 bg-emerald-500/10 text-brand"
+                      }`}
+                    >
+                      {user.role === "extension_officer" ? "Officer" : "Farmer"}
+                    </span>
+                  </div>
                   <p className="text-[10px] text-mist">{user.email || "Punjab Farmer"}</p>
                 </div>
               </div>
