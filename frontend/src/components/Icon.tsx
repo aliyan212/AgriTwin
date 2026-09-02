@@ -22,6 +22,8 @@ export type IconName =
   | "mapPin"
   | "pencil"
   | "undo"
+  | "sun"
+  | "moon"
   | "layers"
   | "menu"
   | "crosshair"
@@ -49,6 +51,7 @@ export type IconName =
   | "download"
   | "logOut"
   | "user"
+  | "trash"
   | "checkCircle";
 
 const PATHS: Record<IconName, ReactNode> = {
