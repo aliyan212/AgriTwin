@@ -63,3 +63,4 @@ All translations are centralized in `frontend/src/lib/translations.ts`:
 1. Create a feature branch (`git checkout -b feature/my-feature`).
 2. Commit changes with clear, descriptive commit messages (`git commit -m "feat: add mustard crop phenology"`).
 3. Push to your branch and open a Pull Request against `main`.
+
