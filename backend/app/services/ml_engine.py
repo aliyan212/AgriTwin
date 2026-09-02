@@ -24,8 +24,20 @@ from sqlalchemy.orm import Session
 import agricore
 from app.models import Crop, HealthScoreSnapshot, SatelliteObservation, WeatherRecord
 
-MODEL_DIR = Path(__file__).resolve().parent.parent.parent / "ml_models"
-MODEL_DIR.mkdir(exist_ok=True)
+import os
+import tempfile
+
+# In serverless environments (Vercel / Lambda), filesystem is read-only except /tmp
+if os.environ.get("VERCEL") or not os.access(Path(__file__).resolve().parent.parent.parent, os.W_OK):
+    MODEL_DIR = Path(tempfile.gettempdir()) / "agritwin_ml_models"
+else:
+    MODEL_DIR = Path(__file__).resolve().parent.parent.parent / "ml_models"
+
+try:
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+except Exception:
+    MODEL_DIR = Path(tempfile.gettempdir()) / "agritwin_ml_models"
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 FEATURES = ["temperature_c", "humidity_pct", "rainfall_mm", "wind_speed_kmh", "month"]
 
