@@ -13,6 +13,7 @@ from app.models import (
     HealthScoreSnapshot,
     Recommendation,
     SatelliteObservation,
+    SoilObservation,
     WeatherRecord,
 )
 from app.schemas import RecommendationResponse, WarabandiAdviceResponse, WarabandiConfigUpdate
@@ -334,7 +335,7 @@ async def get_warabandi_advice(farm_id: int, db: Session = Depends(get_db)):
     soil_moisture = 0.22
 
     try:
-        weather_data = await weather_service.get_forecast_open_meteo(farm.latitude, farm.longitude, days=3)
+        weather_data = await weather_service.get_forecast_open_meteo(farm.latitude, farm.longitude, forecast_days=3)
         daily = weather_data.get("daily", {})
         rain_list = daily.get("precipitation_sum", [])
         rain_48h = sum(rain_list[:2]) if len(rain_list) >= 2 else (rain_list[0] if rain_list else 0.0)
@@ -348,14 +349,14 @@ async def get_warabandi_advice(farm_id: int, db: Session = Depends(get_db)):
             soil_moisture = curr.get("soil_moisture_0_to_7cm")
     except Exception:
         # Fallback to local observation records
-        latest_weather = (
-            db.query(WeatherRecord)
-            .filter(WeatherRecord.farm_id == farm.id)
-            .order_by(WeatherRecord.id.desc())
+        latest_soil = (
+            db.query(SoilObservation)
+            .filter(SoilObservation.farm_id == farm.id)
+            .order_by(SoilObservation.id.desc())
             .first()
         )
-        if latest_weather and latest_weather.soil_moisture_0_to_7cm is not None:
-            soil_moisture = latest_weather.soil_moisture_0_to_7cm
+        if latest_soil and latest_soil.soil_moisture_m3m3 is not None:
+            soil_moisture = latest_soil.soil_moisture_m3m3
 
     advice = warabandi_engine.evaluate_warabandi_irrigation(
         farm_id=farm.id,
