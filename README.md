@@ -11,6 +11,13 @@
 
 ---
 
+## 🖥️ Platform Interface
+
+![AgriTwin Mission Control Dashboard](docs/images/mission_control_dashboard.png)
+*AgriTwin Mission Control: Interactive GIS parcel boundary mapping in Gujrat Division, live Punjab node telemetry beacon, and 5-dimension Field Health Index.*
+
+---
+
 ## 👥 The Team Behind AgriTwin
 
 AgriTwin was developed collaboratively as a hackathon project exploring practical digital twin tools for Pakistani agriculture:
