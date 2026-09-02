@@ -27,6 +27,29 @@ import { useLanguage } from "@/components/LanguageProvider";
 // Dynamic import prevents SSR issues with Leaflet
 const FarmMap = dynamic(() => import("@/components/FarmMap"), { ssr: false });
 
+const PUNJAB_CANALS = [
+  "Lower Bari Doab Canal (LBDC)",
+  "Upper Chenab Canal",
+  "Muzaffargarh Canal",
+  "Sidhnai Canal",
+  "Thal Canal",
+  "Fordwah Canal",
+  "Dera Ghazi Khan Canal",
+  "Pakpattan Canal",
+  "Upper Jhelum Canal",
+  "Central Bari Doab Canal",
+];
+
+const WEEKDAYS = [
+  { en: "Monday", ur: "پیر" },
+  { en: "Tuesday", ur: "منگل" },
+  { en: "Wednesday", ur: "بدھ" },
+  { en: "Thursday", ur: "جمعرات" },
+  { en: "Friday", ur: "جمعہ" },
+  { en: "Saturday", ur: "ہفتہ" },
+  { en: "Sunday", ur: "اتوار" },
+];
+
 export default function DashboardPage() {
   const { t, isUrdu } = useLanguage();
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -59,6 +82,13 @@ export default function DashboardPage() {
   // Farm creation state
   const [newFarmName, setNewFarmName] = useState("");
   const [newFarmDistrict, setNewFarmDistrict] = useState("");
+  const [newCanalName, setNewCanalName] = useState("Lower Bari Doab Canal (LBDC)");
+  const [newCanalTurnDay, setNewCanalTurnDay] = useState("Thursday");
+  const [newCanalTurnTime, setNewCanalTurnTime] = useState("02:00");
+  const [newCanalTurnDuration, setNewCanalTurnDuration] = useState(4.0);
+  const [newTubewellPowerSource, setNewTubewellPowerSource] = useState("diesel");
+  const [newTubewellHourlyCost, setNewTubewellHourlyCost] = useState(1400.0);
+  const [showTurnConfig, setShowTurnConfig] = useState(false);
   const [drawnPolygon, setDrawnPolygon] = useState<string | null>(null);
   const [drawnCentroid, setDrawnCentroid] = useState<[number, number] | null>(null);
   const [drawnArea, setDrawnArea] = useState<number | null>(null);
@@ -211,11 +241,18 @@ export default function DashboardPage() {
         province: "Punjab",
         latitude: drawnCentroid?.[0],
         longitude: drawnCentroid?.[1],
+        canal_name: newCanalName,
+        canal_turn_day: newCanalTurnDay,
+        canal_turn_time: newCanalTurnTime,
+        canal_turn_duration_hours: newCanalTurnDuration,
+        tubewell_power_source: newTubewellPowerSource,
+        tubewell_hourly_cost_pkr: newTubewellHourlyCost,
       });
       setFarms((prev) => [...prev, farm]);
       setSelectedFarm(farm);
       setShowCreateForm(false);
       setNewFarmName("");
+      setShowTurnConfig(false);
       setDrawnPolygon(null);
       setDrawnCentroid(null);
       setDrawnArea(null);
@@ -388,7 +425,7 @@ export default function DashboardPage() {
           {/* Farm Creation Form (Moved to fixed modal) */}
           {showCreateForm && (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-              <div className="relative w-full max-w-md rounded-2xl border border-brand/30 bg-panel/95 p-6 shadow-2xl backdrop-blur-2xl">
+              <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-brand/30 bg-panel/95 p-6 shadow-2xl backdrop-blur-2xl">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15 text-brand ring-1 ring-emerald-400/30">
@@ -460,6 +497,116 @@ export default function DashboardPage() {
                       )}
                     </div>
                   )}
+
+                  {/* ── Warabandi Canal & Tubewell Setup Accordion ────────────── */}
+                  <div className="rounded-xl border border-cyan-500/20 bg-cyan-950/15 p-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowTurnConfig(!showTurnConfig)}
+                      className="flex w-full items-center justify-between text-left font-semibold text-ink"
+                    >
+                      <span className="flex items-center gap-1.5 text-xs text-cyan-300">
+                        <Icon name="droplet" size={13} className="text-cyan-400" />
+                        {isUrdu ? "وارابندی تے ٹیوب ویل سیٹنگز (اختیاری)" : "Canal Turn & Tubewell (Optional)"}
+                      </span>
+                      <span className="text-[10px] text-cyan-400 underline font-medium">
+                        {showTurnConfig ? (isUrdu ? "بند کرو" : "Hide") : (isUrdu ? "واری سیٹ کرو" : "Configure Turn")}
+                      </span>
+                    </button>
+
+                    {showTurnConfig && (
+                      <div className="mt-3 space-y-3 border-t border-cyan-500/10 pt-3 animate-fade-in">
+                        <div>
+                          <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
+                            {isUrdu ? "نہری ڈسٹری بیوٹری" : "Canal / Distributary"}
+                          </label>
+                          <select
+                            value={newCanalName}
+                            onChange={(e) => setNewCanalName(e.target.value)}
+                            className="input-theme w-full"
+                          >
+                            {PUNJAB_CANALS.map((c) => (
+                              <option key={c} value={c} className="bg-abyss text-ink">
+                                {c}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
+                              {isUrdu ? "واری دا دن" : "Canal Turn Day"}
+                            </label>
+                            <select
+                              value={newCanalTurnDay}
+                              onChange={(e) => setNewCanalTurnDay(e.target.value)}
+                              className="input-theme w-full"
+                            >
+                              {WEEKDAYS.map((d) => (
+                                <option key={d.en} value={d.en} className="bg-abyss text-ink">
+                                  {isUrdu ? `${d.ur} (${d.en})` : d.en}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
+                              {isUrdu ? "واری دا وقت" : "Start Time"}
+                            </label>
+                            <input
+                              type="time"
+                              value={newCanalTurnTime}
+                              onChange={(e) => setNewCanalTurnTime(e.target.value)}
+                              className="input-theme w-full"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
+                              {isUrdu ? "واری (گھنٹے)" : "Duration (Hours)"}
+                            </label>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="1"
+                              max="24"
+                              value={newCanalTurnDuration}
+                              onChange={(e) => setNewCanalTurnDuration(parseFloat(e.target.value) || 4.0)}
+                              className="input-theme w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block font-semibold text-mist uppercase tracking-wider text-[10px]">
+                              {isUrdu ? "ٹیوب ویل ایندھن" : "Tubewell Power"}
+                            </label>
+                            <select
+                              value={newTubewellPowerSource}
+                              onChange={(e) => {
+                                setNewTubewellPowerSource(e.target.value);
+                                setNewTubewellHourlyCost(
+                                  e.target.value === "diesel" ? 1400.0 : e.target.value === "grid" ? 650.0 : 0.0
+                                );
+                              }}
+                              className="input-theme w-full capitalize"
+                            >
+                              <option value="diesel" className="bg-abyss text-ink">
+                                {isUrdu ? "ڈیزل جنریٹر" : "Diesel"}
+                              </option>
+                              <option value="grid" className="bg-abyss text-ink">
+                                {isUrdu ? "بجلی گرڈ" : "Electric Grid"}
+                              </option>
+                              <option value="solar" className="bg-abyss text-ink">
+                                {isUrdu ? "سولر پینل" : "Solar"}
+                              </option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   <div className="flex gap-3 pt-3 mt-4 border-t border-ink/10">
                     <button

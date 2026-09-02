@@ -317,6 +317,12 @@ export const api = {
     province?: string;
     latitude?: number;
     longitude?: number;
+    canal_name?: string;
+    canal_turn_day?: string;
+    canal_turn_time?: string;
+    canal_turn_duration_hours?: number;
+    tubewell_power_source?: string;
+    tubewell_hourly_cost_pkr?: number;
   }) => request<Farm>("/farms/", { method: "POST", body: JSON.stringify(farm) }),
   deleteFarm: (id: number) =>
     request<void>(`/farms/${id}`, { method: "DELETE" }),
