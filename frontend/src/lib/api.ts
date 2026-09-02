@@ -4,9 +4,15 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api/v1";
 
+function getCookieToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp("(^| )agri_token=([^;]+)"));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  // Attach JWT token if available
-  const token = typeof window !== "undefined" ? localStorage.getItem("agri_token") : null;
+  // Attach JWT token if available in cookie
+  const token = getCookieToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(init?.headers as Record<string, string>),
@@ -17,7 +23,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const cacheKey = `agritwin_offline_${path}`;
 
   try {
-    const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers,
+      credentials: "include",
+    });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new Error(`API ${res.status}: ${body || res.statusText}`);
@@ -436,5 +446,6 @@ export const api = {
     request<AuthUser>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
   login: (data: { email: string; password: string }) =>
     request<LoginResponse>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
+  logout: () => request<{ status: string }>("/auth/logout", { method: "POST" }),
   getMe: () => request<AuthUser>("/auth/me"),
 };

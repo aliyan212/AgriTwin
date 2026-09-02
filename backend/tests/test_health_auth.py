@@ -68,3 +68,13 @@ def test_user_registration_and_login_flow(client):
     assert me_data["email"] == user_payload["email"]
     assert me_data["name"] == user_payload["name"]
 
+    # 6. Access /auth/me with agri_session cookie directly (no Bearer header)
+    assert "agri_session" in login_response.cookies
+    cookie_me_response = client.get("/api/v1/auth/me")
+    assert cookie_me_response.status_code == 200
+    assert cookie_me_response.json()["email"] == user_payload["email"]
+
+    # 7. Logout clears cookie
+    logout_res = client.post("/api/v1/auth/logout")
+    assert logout_res.status_code == 200
+

@@ -1,9 +1,9 @@
-"""Authentication router — JWT register, login, and token dependency."""
+"""Authentication router — JWT register, login, and token dependency with cookie & Bearer support."""
 
 import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer
 import bcrypt
 from jose import JWTError, jwt
@@ -16,7 +16,9 @@ from app.schemas import LoginRequest, UserCreate, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_PREFIX}/auth/login", auto_error=False
+)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -29,7 +31,7 @@ def _verify_password(plain: str, hashed: str) -> bool:
 
 
 def _create_token(user_id: int, expires_minutes: int | None = None) -> str:
-    exp = datetime.datetime.utcnow() + datetime.timedelta(
+    exp = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
         minutes=expires_minutes or settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
     return jwt.encode(
@@ -39,9 +41,18 @@ def _create_token(user_id: int, expires_minutes: int | None = None) -> str:
     )
 
 
-# ── Dependency: get current user from JWT ────────────────────────────────────
+def _extract_token(request: Request, bearer_token: str | None) -> str | None:
+    """Extract token from Authorization header or from HttpOnly agri_session cookie."""
+    if bearer_token:
+        return bearer_token
+    # Fallback to cookie
+    return request.cookies.get("agri_session")
+
+
+# ── Dependencies ─────────────────────────────────────────────────────────────
 def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    request: Request,
+    token: Annotated[str | None, Depends(oauth2_scheme)] = None,
     db: Session = Depends(get_db),
 ) -> User:
     """Decode JWT and return the authenticated user, or raise 401."""
@@ -50,8 +61,12 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    jwt_token = _extract_token(request, token)
+    if not jwt_token:
+        raise credentials_exception
+
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(jwt_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id_str: str | None = payload.get("sub")
         if user_id_str is None:
             raise credentials_exception
@@ -65,20 +80,17 @@ def get_current_user(
     return user
 
 
-oauth2_scheme_optional = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_PREFIX}/auth/login", auto_error=False
-)
-
-
 def get_optional_current_user(
-    token: Annotated[str | None, Depends(oauth2_scheme_optional)] = None,
+    request: Request,
+    token: Annotated[str | None, Depends(oauth2_scheme)] = None,
     db: Session = Depends(get_db),
 ) -> User | None:
-    """Decode JWT if token is present, else return None without 401 error."""
-    if not token:
+    """Decode JWT if token is present (header or cookie), else return None without 401 error."""
+    jwt_token = _extract_token(request, token)
+    if not jwt_token:
         return None
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(jwt_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id_str: str | None = payload.get("sub")
         if user_id_str is None:
             return None
@@ -93,9 +105,12 @@ def get_optional_current_user(
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 @router.post("/register", response_model=UserResponse, status_code=201)
-def register(payload: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user."""
-    # Check email uniqueness
+def register(
+    payload: UserCreate,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """Register a new user and set secure auth cookie."""
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -110,12 +125,26 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    token = _create_token(user.id)
+    response.set_cookie(
+        key="agri_session",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=86400 * 7,
+        path="/",
+    )
     return user
 
 
 @router.post("/login")
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    """Authenticate and return a JWT access token."""
+def login(
+    payload: LoginRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """Authenticate, issue JWT access token, and set HttpOnly session cookie."""
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not _verify_password(payload.password, user.hashed_password):
         raise HTTPException(
@@ -126,6 +155,14 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Account is disabled")
 
     token = _create_token(user.id)
+    response.set_cookie(
+        key="agri_session",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=86400 * 7,
+        path="/",
+    )
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -136,6 +173,13 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             "role": user.role or "farmer",
         },
     }
+
+
+@router.post("/logout")
+def logout(response: Response):
+    """Clear the session cookie."""
+    response.delete_cookie(key="agri_session", path="/")
+    return {"status": "ok", "message": "Logged out successfully"}
 
 
 @router.get("/me", response_model=UserResponse)

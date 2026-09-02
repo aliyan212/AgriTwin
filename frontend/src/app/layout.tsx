@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import OfflineBanner from "@/components/OfflineBanner";
+import { AuthProvider } from "@/components/AuthProvider";
+import { AuthGuard } from "@/components/AuthGuard";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -67,20 +69,24 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <LanguageProvider>
-            {/* ── Offline Network Status Banner ────────────────────────────────── */}
-            <OfflineBanner />
+            <AuthProvider>
+              <AuthGuard>
+                {/* ── Offline Network Status Banner ────────────────────────────────── */}
+                <OfflineBanner />
 
-            {/* ── Top Navigation ─────────────────────────────────────────────── */}
-            <HeaderNav />
+                {/* ── Top Navigation ─────────────────────────────────────────────── */}
+                <HeaderNav />
 
-            {/* ── Main Content ───────────────────────────────────────────────── */}
-            <main className="flex-1">{children}</main>
+                {/* ── Main Content ───────────────────────────────────────────────── */}
+                <main className="flex-1">{children}</main>
 
-            {/* ── PWA Install Prompt Listener ─────────────────────────────────── */}
-            <ServiceWorkerRegistration />
+                {/* ── PWA Install Prompt Listener ─────────────────────────────────── */}
+                <ServiceWorkerRegistration />
 
-            {/* ── Global Footer ─────────────────────────────────────────────── */}
-            <Footer />
+                {/* ── Global Footer ─────────────────────────────────────────────── */}
+                <Footer />
+              </AuthGuard>
+            </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

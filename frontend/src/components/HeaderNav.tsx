@@ -7,13 +7,14 @@ import Icon from "@/components/Icon";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/components/LanguageProvider";
-import { api, type AuthUser } from "@/lib/api";
+import { api } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 import { usePwaInstall } from "@/components/ServiceWorkerRegistration";
 
 export default function HeaderNav() {
   const pathname = usePathname();
   const { t, isUrdu } = useLanguage();
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const { user, logout } = useAuth();
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { canInstall, installApp } = usePwaInstall();
@@ -39,31 +40,14 @@ export default function HeaderNav() {
     checkHealth();
     const interval = setInterval(checkHealth, 10000);
 
-    // Load auth user
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("agri_user");
-      if (stored) {
-        try {
-          setUser(JSON.parse(stored));
-        } catch {
-          // ignore
-        }
-      }
-    }
-
     return () => {
       active = false;
       clearInterval(interval);
     };
   }, []);
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("agri_token");
-      localStorage.removeItem("agri_user");
-      setUser(null);
-      window.location.href = "/login";
-    }
+  const handleLogout = async () => {
+    await logout();
   };
 
   const desktopNavLinks = [

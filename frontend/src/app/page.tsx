@@ -25,6 +25,7 @@ import SkeletonCard from "@/components/SkeletonCard";
 import WarabandiAdvisor from "@/components/WarabandiAdvisor";
 import SoilPhysicsCard from "@/components/SoilPhysicsCard";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useAuth } from "@/components/AuthProvider";
 
 // Dynamic import prevents SSR issues with Leaflet
 const FarmMap = dynamic(() => import("@/components/FarmMap"), { ssr: false });
@@ -137,7 +138,7 @@ function inferCanalFromLocation(
 
 export default function DashboardPage() {
   const { t, isUrdu } = useLanguage();
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const { user } = useAuth();
   const [farms, setFarms] = useState<Farm[]>([]);
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -202,19 +203,8 @@ export default function DashboardPage() {
     }
   };
 
-  // ── Load user and farms on mount ────────────────────────────────────────
+  // ── Load farms on mount ───────────────────────────────────────────────────
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("agri_user");
-      if (stored) {
-        try {
-          setCurrentUser(JSON.parse(stored));
-        } catch {
-          // ignore
-        }
-      }
-    }
-
     api.listFarms().then((list) => {
       setFarms(list);
       // Auto-select first farm if available for instant data
@@ -364,7 +354,7 @@ export default function DashboardPage() {
     }
   };
 
-  const isOfficer = currentUser?.role === "extension_officer";
+  const isOfficer = user?.role === "extension_officer";
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">

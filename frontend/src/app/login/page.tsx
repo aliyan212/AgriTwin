@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 import Icon from "@/components/Icon";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState<string | null>(null);
@@ -22,9 +26,8 @@ export default function LoginPage() {
     setError(null);
     try {
       const res = await api.login({ email: demoEmail, password: "password123" });
-      localStorage.setItem("agri_token", res.access_token);
-      localStorage.setItem("agri_user", JSON.stringify(res.user));
-      window.location.href = "/";
+      login(res.access_token, res.user);
+      router.replace("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed");
       setDemoLoading(null);
@@ -48,9 +51,8 @@ export default function LoginPage() {
       }
 
       const res = await api.login({ email, password });
-      localStorage.setItem("agri_token", res.access_token);
-      localStorage.setItem("agri_user", JSON.stringify(res.user));
-      window.location.href = "/";
+      login(res.access_token, res.user);
+      router.replace("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed");
     } finally {
