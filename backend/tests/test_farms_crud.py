@@ -73,3 +73,4 @@ def test_create_and_get_farm(client):
     # 7. Verify farm is gone (404)
     after_del_res = client.get(f"/api/v1/farms/{farm_id}")
     assert after_del_res.status_code == 404
+

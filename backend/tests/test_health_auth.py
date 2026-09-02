@@ -67,3 +67,4 @@ def test_user_registration_and_login_flow(client):
     me_data = me_response.json()
     assert me_data["email"] == user_payload["email"]
     assert me_data["name"] == user_payload["name"]
+

@@ -52,3 +52,4 @@ jobs:
       - name: Run Localization & Unit Tests
         working-directory: frontend
         run: npm test
+
