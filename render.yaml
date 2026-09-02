@@ -4,15 +4,13 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: PYTHONPATH=data-engine:backend/app uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: PYTHONPATH=data-engine:backend uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: "3.12.8"
-      - key: DEBUG
-        value: "false"
+        value: 3.11.9
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
         value: sqlite:///./agritwin.db
-      - key: CORS_ORIGINS
-        value: "http://localhost:3000"
+      - key: GEMINI_API_KEY
+        sync: false
