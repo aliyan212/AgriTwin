@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState<"farmer" | "extension_officer">("farmer");
 
   const handleInstantDemoLogin = async (demoEmail: string, demoRole: string) => {
     setDemoLoading(demoRole);
@@ -37,7 +38,13 @@ export default function LoginPage() {
 
     try {
       if (mode === "register") {
-        await api.register({ name, email, phone: phone || undefined, password });
+        await api.register({
+          name,
+          email,
+          phone: phone || undefined,
+          role: selectedRole,
+          password,
+        });
       }
 
       const res = await api.login({ email, password });
@@ -52,116 +59,67 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-10">
-      <div className="w-full max-w-lg">
+    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 text-abyss shadow-[0_0_24px_rgba(52,211,153,0.5)]">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 text-abyss shadow-[0_0_24px_rgba(52,211,153,0.4)]">
             <Icon name="sprout" size={24} strokeWidth={2.4} />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-ink">
             Agri<span className="text-brand">Twin</span> AI
           </h1>
           <p className="mt-0.5 text-xs text-mist font-mono">
-            Pakistan Agriculture & Satellite Twin Console
+            Punjab Agriculture Intelligence Platform
           </p>
         </div>
 
-        {/* 1-Click Instant Demo Launch Cards */}
-        <div className="mb-6 space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-dim">
-              ⚡ 1-Click Instant Demo Access
-            </span>
-            <span className="hud-pill text-[10px] text-brand border-brand/30 bg-brand/10">
-              Zero-Setup Login
-            </span>
-          </div>
+        {/* Main Card */}
+        <div className="glass-panel p-6 sm:p-7 relative overflow-hidden shadow-xl">
+          {/* Subtle top glow bar */}
+          <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-emerald-500 via-brand to-sky-400" />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Card 1: Punjab Farmer */}
-            <div className="glass-panel p-4 flex flex-col justify-between border-emerald-500/20 hover:border-emerald-500/40 transition-all hover:shadow-lg relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-bl-full pointer-events-none" />
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/15 text-brand">
-                    <Icon name="wheat" size={13} />
-                  </span>
-                  <span className="text-xs font-bold text-ink">Punjab Farmer</span>
-                </div>
-                <h4 className="text-sm font-bold text-ink mb-1">Ahmad Khan</h4>
-                <p className="text-[11px] text-mist mb-3 leading-relaxed">
-                  Field operations, private parcel Warabandi turn water rights & diesel tubewell fuel savings.
-                </p>
-              </div>
-
+          {/* Lowkey 1-Tap Demo Switcher */}
+          <div className="mb-5 rounded-xl border border-ink/8 bg-ink/[0.02] p-2.5">
+            <div className="flex items-center justify-between mb-2 px-0.5">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-dim flex items-center gap-1.5">
+                <Icon name="spark" size={11} className="text-brand" />
+                <span>Demo Accounts</span>
+              </span>
+              <span className="text-[10px] font-mono text-dim">1-Tap Login</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => handleInstantDemoLogin("farmer@agritwin.pk", "farmer")}
                 disabled={demoLoading !== null}
-                className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-3 py-2 text-xs font-bold text-abyss shadow-md hover:shadow-emerald-500/25 transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                className="flex items-center justify-between rounded-lg border border-emerald-500/25 bg-emerald-500/8 px-2.5 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 transition-all active:scale-95 disabled:opacity-50"
               >
-                {demoLoading === "farmer" ? (
-                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-abyss border-t-transparent" />
-                ) : (
-                  <>
-                    <span>Enter as Farmer</span>
-                    <span>→</span>
-                  </>
-                )}
+                <span className="flex items-center gap-1.5 truncate">
+                  <span>🌱</span>
+                  <span className="truncate">Farmer</span>
+                </span>
+                <span className="text-[10px] opacity-70">→</span>
               </button>
-            </div>
-
-            {/* Card 2: Agriculture Extension Officer */}
-            <div className="glass-panel p-4 flex flex-col justify-between border-sky-500/20 hover:border-sky-500/40 transition-all hover:shadow-lg relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-sky-500/10 rounded-bl-full pointer-events-none" />
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-500/15 text-sky-400">
-                    <Icon name="activity" size={13} />
-                  </span>
-                  <span className="text-xs font-bold text-ink">Agri Extension Officer</span>
-                </div>
-                <h4 className="text-sm font-bold text-ink mb-1">Dr. Tariq Mahmood</h4>
-                <p className="text-[11px] text-mist mb-3 leading-relaxed">
-                  Regional surveillance, multi-district Punjab farm telemetry & government advisory broadcasts.
-                </p>
-              </div>
-
               <button
                 type="button"
                 onClick={() => handleInstantDemoLogin("officer@agritwin.pk", "officer")}
                 disabled={demoLoading !== null}
-                className="w-full rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 px-3 py-2 text-xs font-bold text-white shadow-md hover:shadow-sky-500/25 transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                className="flex items-center justify-between rounded-lg border border-sky-500/25 bg-sky-500/8 px-2.5 py-1.5 text-xs font-medium text-sky-700 dark:text-sky-300 hover:bg-sky-500/15 transition-all active:scale-95 disabled:opacity-50"
               >
-                {demoLoading === "officer" ? (
-                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                ) : (
-                  <>
-                    <span>Enter as Officer</span>
-                    <span>→</span>
-                  </>
-                )}
+                <span className="flex items-center gap-1.5 truncate">
+                  <span>🏛️</span>
+                  <span className="truncate">Officer</span>
+                </span>
+                <span className="text-[10px] opacity-70">→</span>
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Divider */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-ink/8" />
-          </div>
-          <div className="relative flex justify-center text-[10px] uppercase font-mono tracking-wider">
-            <span className="bg-abyss px-3 text-dim">Or Sign In with Custom Account</span>
-          </div>
-        </div>
-
-        {/* Manual Login / Register Card */}
-        <div className="glass-panel p-6 relative overflow-hidden">
-          <div className="mb-4 flex items-center justify-between">
+          {/* Form Header */}
+          <div className="mb-4 flex items-center justify-between border-b border-ink/6 pb-3">
             <h2 className="text-sm font-bold text-ink">
-              {mode === "login" ? "Account Credentials" : "Create Twin Account"}
+              {mode === "login" ? "Sign In to Mission Control" : "Register Custom Account"}
             </h2>
             <button
               type="button"
@@ -171,13 +129,52 @@ export default function LoginPage() {
               }}
               className="text-[11px] font-semibold text-brand hover:underline"
             >
-              {mode === "login" ? "Register New" : "Already have an account?"}
+              {mode === "login" ? "Create Account" : "Sign In instead"}
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
             {mode === "register" && (
               <>
+                {/* Role Switcher for Custom Registration */}
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-medium text-mist">
+                    Select Account Role
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("farmer")}
+                      className={`flex items-center gap-2 rounded-xl p-2.5 border text-xs font-semibold transition-all ${
+                        selectedRole === "farmer"
+                          ? "border-brand/40 bg-brand/15 text-brand shadow-sm"
+                          : "border-ink/8 bg-ink/[0.02] text-mist hover:text-ink hover:bg-ink/5"
+                      }`}
+                    >
+                      <Icon name="wheat" size={14} />
+                      <div className="text-left">
+                        <div className="text-xs">Punjab Farmer</div>
+                        <div className="text-[9px] text-mist font-normal">Field Landowner</div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("extension_officer")}
+                      className={`flex items-center gap-2 rounded-xl p-2.5 border text-xs font-semibold transition-all ${
+                        selectedRole === "extension_officer"
+                          ? "border-sky-400/40 bg-sky-500/15 text-sky-400 shadow-sm"
+                          : "border-ink/8 bg-ink/[0.02] text-mist hover:text-ink hover:bg-ink/5"
+                      }`}
+                    >
+                      <Icon name="activity" size={14} />
+                      <div className="text-left">
+                        <div className="text-xs">Agri Officer</div>
+                        <div className="text-[9px] text-mist font-normal">Supervisory Mode</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
                 <div>
                   <label className="mb-1 block text-[11px] font-medium text-mist">
                     Full Name
@@ -188,9 +185,10 @@ export default function LoginPage() {
                     onChange={(e) => setName(e.target.value)}
                     required
                     className="input-theme px-3.5 py-2 text-xs"
-                    placeholder="e.g. Chaudhry Ahmad"
+                    placeholder="e.g. Tariq Mahmood"
                   />
                 </div>
+
                 <div>
                   <label className="mb-1 block text-[11px] font-medium text-mist">
                     Phone Number (Optional)
@@ -216,7 +214,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="input-theme px-3.5 py-2 text-xs"
-                placeholder="farmer@agritwin.pk"
+                placeholder="user@agritwin.pk"
               />
             </div>
 
@@ -243,14 +241,14 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-ink/10 border border-ink/12 py-2 text-xs font-semibold text-ink hover:bg-ink/15 transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+              className="w-full rounded-xl bg-gradient-to-b from-emerald-400 to-emerald-600 py-2.5 text-xs font-bold text-abyss shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
             >
               {loading ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-ink border-t-transparent" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-abyss border-t-transparent" />
               ) : mode === "login" ? (
                 "Sign In"
               ) : (
-                "Create Account"
+                `Register as ${selectedRole === "extension_officer" ? "Agri Officer" : "Farmer"}`
               )}
             </button>
           </form>

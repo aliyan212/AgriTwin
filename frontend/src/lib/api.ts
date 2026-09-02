@@ -432,7 +432,7 @@ export const api = {
     request<FarmIntelligence>(`/farms/${farmId}/intelligence`),
 
   // Auth (Phase 3)
-  register: (data: { name: string; email: string; phone?: string; password: string }) =>
+  register: (data: { name: string; email: string; phone?: string; role?: string; password: string }) =>
     request<AuthUser>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
   login: (data: { email: string; password: string }) =>
     request<LoginResponse>("/auth/login", { method: "POST", body: JSON.stringify(data) }),

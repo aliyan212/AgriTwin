@@ -104,6 +104,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
         name=payload.name,
         email=payload.email,
         phone=payload.phone,
+        role=payload.role or "farmer",
         hashed_password=_hash_password(payload.password),
     )
     db.add(user)
