@@ -18,6 +18,10 @@ export default function HeaderNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { canInstall, installApp } = usePwaInstall();
 
+  const docsUrl = process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL.replace("/api/v1", "/docs")
+    : "http://127.0.0.1:8000/docs";
+
   useEffect(() => {
     // Check API health
     api
@@ -102,11 +106,11 @@ export default function HeaderNav() {
 
             {/* FastAPI Docs External Link */}
             <a
-              href="http://127.0.0.1:8000/docs"
+              href={docsUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-mist transition-colors hover:bg-ink/6 hover:text-ink"
-              title="Open Swagger REST API Docs (Backend :8000)"
+              title="Open Swagger REST API Docs"
             >
               <span>{t("navDocs", "API Docs")}</span>
               <Icon name="externalLink" size={11} className="text-dim" />
@@ -293,7 +297,7 @@ export default function HeaderNav() {
 
             {/* FastAPI Docs External Link (Mobile) */}
             <a
-              href="http://127.0.0.1:8000/docs"
+              href={docsUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMobileMenuOpen(false)}
