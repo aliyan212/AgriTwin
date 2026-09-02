@@ -371,39 +371,41 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Action cluster: Farm Selector + Quick Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 relative z-[1000] w-full md:w-auto">
+        {/* Action cluster: Farm Selector + Quick Action Toolbar */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 relative z-[1000] w-full md:w-auto">
           <div className="w-full sm:w-auto">
             <FarmSelector farms={farms} selected={selectedFarm} onSelect={setSelectedFarm} />
           </div>
 
           {selectedFarm && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
+            <div className="flex items-center justify-between sm:justify-start gap-1 rounded-xl border border-ink/10 bg-ink/[0.03] p-1 w-full sm:w-auto shadow-sm">
               <Link
                 href={`/farms/${selectedFarm.id}`}
-                className="shrink-0 flex items-center gap-1.5 rounded-xl border border-ink/12 bg-ink/6 px-3.5 py-1.5 text-xs font-semibold text-ink transition-all hover:border-brand/40 hover:bg-brand/12 hover:text-brand"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-ink transition-all hover:bg-brand/12 hover:text-brand active:scale-95"
               >
-                <Icon name="activity" size={13} />
-                <span>{t("viewAnalytics", "Full Analytics")}</span>
+                <Icon name="activity" size={13} className="text-brand shrink-0" />
+                <span className="whitespace-nowrap">{t("viewAnalytics", "Full Analytics")}</span>
               </Link>
 
               <Link
                 href={`/farms/${selectedFarm.id}/history`}
-                className="shrink-0 flex items-center gap-1.5 rounded-xl border border-ink/12 bg-ink/6 px-3 py-1.5 text-xs font-semibold text-mist transition-all hover:border-ink/20 hover:text-ink"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-mist transition-all hover:bg-ink/6 hover:text-ink active:scale-95"
                 title="Field Observation History"
               >
-                <Icon name="clock" size={13} />
-                <span>{t("viewHistory", "History Log")}</span>
+                <Icon name="clock" size={13} className="text-dim shrink-0" />
+                <span className="whitespace-nowrap">{t("viewHistory", "History Log")}</span>
               </Link>
+
+              <div className="h-4 w-px bg-ink/10 shrink-0 mx-0.5" />
 
               <button
                 onClick={() => setShowDeleteModal(true)}
                 disabled={deleting}
-                className="shrink-0 flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors disabled:opacity-50"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 transition-all disabled:opacity-50 active:scale-95"
                 title="Delete Selected Farm"
               >
-                <Icon name="trash" size={13} />
-                <span>{t("deleteFarmNode", "Delete")}</span>
+                <Icon name="trash" size={13} className="shrink-0" />
+                <span className="whitespace-nowrap">{t("deleteFarmNode", "Delete")}</span>
               </button>
             </div>
           )}
