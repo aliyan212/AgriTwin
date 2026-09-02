@@ -54,6 +54,7 @@ export default function HeaderNav() {
   const navLinks = [
     { href: "/", label: t("navDashboard", "Dashboard"), icon: "activity" as const },
     { href: "/farms", label: t("navFarmsHub", "Farms Hub"), icon: "wheat" as const },
+    { href: "/about", label: t("navAbout", "About"), icon: "info" as const },
   ];
 
   return (
