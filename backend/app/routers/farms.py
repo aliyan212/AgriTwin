@@ -8,6 +8,7 @@ from app.models import Crop, Farm, User
 from app.routers.auth import get_optional_current_user
 from app.schemas import CropCreate, CropResponse, FarmCreate, FarmResponse
 import warabandi_engine
+import crop_knowledge
 
 router = APIRouter(prefix="/farms", tags=["farms"])
 
@@ -76,9 +77,6 @@ def delete_farm(
     db.commit()
 
 
-from crop_knowledge import derive_growth_stage
-
-
 # ── Crop CRUD ─────────────────────────────────────────────────────────────────
 @router.post("/{farm_id}/crops", response_model=CropResponse, status_code=201)
 def add_crop(farm_id: int, payload: CropCreate, db: Session = Depends(get_db)):
@@ -87,7 +85,7 @@ def add_crop(farm_id: int, payload: CropCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Farm not found")
     data = payload.model_dump()
     if not data.get("growth_stage") and data.get("sowing_date"):
-        stage_info = derive_growth_stage(data["crop_name"], data["sowing_date"])
+        stage_info = crop_knowledge.derive_growth_stage(data["crop_name"], data["sowing_date"])
         data["growth_stage"] = stage_info["stage"]
     crop = Crop(farm_id=farm_id, **data)
     db.add(crop)
@@ -102,7 +100,7 @@ def list_crops(farm_id: int, db: Session = Depends(get_db)):
     # Dynamic sync of current growth stage based on elapsed days
     for c in crops:
         if c.sowing_date:
-            stage_info = derive_growth_stage(c.crop_name, c.sowing_date)
+            stage_info = crop_knowledge.derive_growth_stage(c.crop_name, c.sowing_date)
             if c.growth_stage != stage_info["stage"]:
                 c.growth_stage = stage_info["stage"]
                 db.add(c)

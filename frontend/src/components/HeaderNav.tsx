@@ -23,11 +23,21 @@ export default function HeaderNav() {
     : "http://127.0.0.1:8000/docs";
 
   useEffect(() => {
-    // Check API health
-    api
-      .healthCheck()
-      .then((h) => setApiOnline(h.status === "ok"))
-      .catch(() => setApiOnline(false));
+    let active = true;
+
+    const checkHealth = () => {
+      api
+        .healthCheck()
+        .then((h) => {
+          if (active) setApiOnline(h.status === "ok");
+        })
+        .catch(() => {
+          if (active) setApiOnline(false);
+        });
+    };
+
+    checkHealth();
+    const interval = setInterval(checkHealth, 10000);
 
     // Load auth user
     if (typeof window !== "undefined") {
@@ -40,6 +50,11 @@ export default function HeaderNav() {
         }
       }
     }
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleLogout = () => {
