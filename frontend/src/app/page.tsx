@@ -50,6 +50,89 @@ const WEEKDAYS = [
   { en: "Sunday", ur: "اتوار" },
 ];
 
+const PUNJAB_CANAL_DISTRICT_MAP: Record<string, string> = {
+  // Bari Doab
+  okara: "Lower Bari Doab Canal (LBDC)",
+  sahiwal: "Lower Bari Doab Canal (LBDC)",
+  khanewal: "Lower Bari Doab Canal (LBDC)",
+  pakpattan: "Lower Bari Doab Canal (LBDC)",
+  lahore: "Central Bari Doab Canal (CBDC)",
+  kasur: "Central Bari Doab Canal (CBDC)",
+  vehari: "Fordwah Canal",
+  bahawalnagar: "Fordwah Canal",
+
+  // Rechna Doab
+  faisalabad: "Lower Chenab Canal (LCC)",
+  "toba tek singh": "Lower Chenab Canal (LCC)",
+  jhang: "Lower Chenab Canal (LCC)",
+  chiniot: "Lower Chenab Canal (LCC)",
+  "nankana sahib": "Lower Chenab Canal (LCC)",
+  hafizabad: "Lower Chenab Canal (LCC)",
+  gujranwala: "Upper Chenab Canal",
+  sialkot: "Upper Chenab Canal",
+  sheikhupura: "Upper Chenab Canal",
+  narowal: "Upper Chenab Canal",
+
+  // Chaj Doab
+  sargodha: "Lower Jhelum Canal",
+  "mandi bahauddin": "Lower Jhelum Canal",
+  gujrat: "Upper Jhelum Canal",
+  jhelum: "Upper Jhelum Canal",
+  rawalpindi: "Upper Jhelum Canal",
+  chakwal: "Upper Jhelum Canal",
+  attock: "Upper Jhelum Canal",
+
+  // Thal
+  bhakkar: "Thal Canal",
+  layyah: "Thal Canal",
+  khushab: "Thal Canal",
+  mianwali: "Thal Canal",
+
+  // Indus & Lower Punjab
+  multan: "Sidhnai Canal",
+  lodhran: "Sidhnai Canal",
+  muzaffargarh: "Muzaffargarh Canal",
+  "kot addu": "Muzaffargarh Canal",
+  "dera ghazi khan": "Dera Ghazi Khan Canal",
+  "dg khan": "Dera Ghazi Khan Canal",
+  rajanpur: "Dera Ghazi Khan Canal",
+  bahawalpur: "Panjnad & Abbasia Canals",
+  "rahim yar khan": "Panjnad & Abbasia Canals",
+};
+
+function inferCanalFromLocation(
+  district?: string,
+  lat?: number,
+  lng?: number
+): string {
+  if (district) {
+    const clean = district.trim().toLowerCase();
+    for (const [key, canal] of Object.entries(PUNJAB_CANAL_DISTRICT_MAP)) {
+      if (clean.includes(key) || key.includes(clean)) {
+        return canal;
+      }
+    }
+  }
+
+  // Coordinate geographic zones if district is not yet resolved
+  if (lat !== undefined && lng !== undefined) {
+    if (lat >= 30.3 && lat <= 31.3 && lng >= 72.8 && lng <= 74.0) return "Lower Bari Doab Canal (LBDC)";
+    if (lat >= 30.8 && lat <= 31.9 && lng >= 72.3 && lng <= 73.6) return "Lower Chenab Canal (LCC)";
+    if (lat >= 31.8 && lat <= 32.7 && lng >= 73.8 && lng <= 75.0) return "Upper Chenab Canal";
+    if (lat >= 31.0 && lat <= 31.8 && lng >= 74.0 && lng <= 74.6) return "Central Bari Doab Canal (CBDC)";
+    if (lat >= 29.8 && lat <= 30.6 && lng >= 71.0 && lng <= 72.2) return "Sidhnai Canal";
+    if (lat >= 29.8 && lat <= 30.9 && lng >= 70.7 && lng <= 71.4) return "Muzaffargarh Canal";
+    if (lat >= 29.5 && lat <= 30.9 && lng >= 70.0 && lng <= 70.8) return "Dera Ghazi Khan Canal";
+    if (lat >= 30.7 && lat <= 32.2 && lng >= 70.8 && lng <= 71.9) return "Thal Canal";
+    if (lat >= 29.5 && lat <= 30.5 && lng >= 72.5 && lng <= 74.0) return "Fordwah Canal";
+    if (lat >= 28.0 && lat <= 29.8 && lng >= 69.8 && lng <= 72.0) return "Panjnad & Abbasia Canals";
+    if (lat >= 31.7 && lat <= 32.7 && lng >= 72.2 && lng <= 73.5) return "Lower Jhelum Canal";
+    if (lat >= 32.4 && lat <= 33.5 && lng >= 73.4 && lng <= 74.5) return "Upper Jhelum Canal";
+  }
+
+  return "Lower Bari Doab Canal (LBDC)";
+}
+
 export default function DashboardPage() {
   const { t, isUrdu } = useLanguage();
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -89,6 +172,7 @@ export default function DashboardPage() {
   const [newTubewellPowerSource, setNewTubewellPowerSource] = useState("diesel");
   const [newTubewellHourlyCost, setNewTubewellHourlyCost] = useState(1400.0);
   const [showTurnConfig, setShowTurnConfig] = useState(false);
+  const [canalAutoDetected, setCanalAutoDetected] = useState(false);
   const [drawnPolygon, setDrawnPolygon] = useState<string | null>(null);
   const [drawnCentroid, setDrawnCentroid] = useState<[number, number] | null>(null);
   const [drawnArea, setDrawnArea] = useState<number | null>(null);
@@ -224,6 +308,9 @@ export default function DashboardPage() {
       } else {
         setDistrictAutoDetected(false);
       }
+      const detectedCanal = inferCanalFromLocation(suggestedDistrict, centroid[0], centroid[1]);
+      setNewCanalName(detectedCanal);
+      setCanalAutoDetected(true);
       setShowCreateForm(true);
     },
     []
@@ -469,8 +556,12 @@ export default function DashboardPage() {
                     <input
                       value={newFarmDistrict}
                       onChange={(e) => {
-                        setNewFarmDistrict(e.target.value);
+                        const val = e.target.value;
+                        setNewFarmDistrict(val);
                         setDistrictAutoDetected(false);
+                        const inferred = inferCanalFromLocation(val, drawnCentroid?.[0], drawnCentroid?.[1]);
+                        setNewCanalName(inferred);
+                        setCanalAutoDetected(true);
                       }}
                       placeholder={t("districtPlaceholder", "e.g. Faisalabad, Multan, Bahawalpur")}
                       className="input-theme"
@@ -524,7 +615,10 @@ export default function DashboardPage() {
                           </label>
                           <select
                             value={newCanalName}
-                            onChange={(e) => setNewCanalName(e.target.value)}
+                            onChange={(e) => {
+                              setNewCanalName(e.target.value);
+                              setCanalAutoDetected(false);
+                            }}
                             className="input-theme w-full"
                           >
                             {PUNJAB_CANALS.map((c) => (
@@ -533,6 +627,16 @@ export default function DashboardPage() {
                               </option>
                             ))}
                           </select>
+                          {canalAutoDetected && (
+                            <p className="mt-1 flex items-center gap-1 text-[10px] text-brand">
+                              <Icon name="spark" size={10} />
+                              <span>
+                                {isUrdu
+                                  ? `لوکیشن توں خودکار منتخب نہر: ${newCanalName}`
+                                  : `Auto-selected for ${newFarmDistrict || "field location"}`}
+                              </span>
+                            </p>
+                          )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
@@ -625,6 +729,7 @@ export default function DashboardPage() {
                         setDrawnCentroid(null);
                         setDrawnArea(null);
                         setDistrictAutoDetected(false);
+                        setCanalAutoDetected(false);
                         setDrawReset((n) => n + 1);
                       }}
                       className="rounded-xl border border-ink/12 bg-ink/5 px-4 py-2.5 text-sm font-medium text-mist hover:bg-ink/10 hover:text-ink transition-colors"

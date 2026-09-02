@@ -364,7 +364,12 @@ async def get_warabandi_advice(farm_id: int, db: Session = Depends(get_db)):
         area_acres=farm.area_acres or 10.0,
         crop_name=crop_name,
         growth_stage=growth_stage,
-        canal_name=farm.canal_name or "Lower Bari Doab Canal",
+        canal_name=farm.canal_name
+        or warabandi_engine.infer_canal_from_location(
+            district=farm.district,
+            lat=farm.latitude,
+            lon=farm.longitude,
+        ),
         canal_turn_day=farm.canal_turn_day or "Thursday",
         canal_turn_time=farm.canal_turn_time or "02:00",
         canal_turn_duration_hours=farm.canal_turn_duration_hours or 4.0,

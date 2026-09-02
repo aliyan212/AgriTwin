@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models import Crop, Farm
 from app.routers.auth import get_current_user
 from app.schemas import CropCreate, CropResponse, FarmCreate, FarmResponse
+import warabandi_engine
 
 router = APIRouter(prefix="/farms", tags=["farms"])
 
@@ -20,7 +21,14 @@ def _get_user_id(user=None) -> int:
 @router.post("/", response_model=FarmResponse, status_code=201)
 def create_farm(payload: FarmCreate, db: Session = Depends(get_db)):
     """Create a new farm. Uses user_id=1 until auth is wired."""
-    farm = Farm(user_id=1, **payload.model_dump())
+    data = payload.model_dump()
+    if not data.get("canal_name"):
+        data["canal_name"] = warabandi_engine.infer_canal_from_location(
+            district=data.get("district"),
+            lat=data.get("latitude"),
+            lon=data.get("longitude"),
+        )
+    farm = Farm(user_id=1, **data)
     db.add(farm)
     db.commit()
     db.refresh(farm)

@@ -110,3 +110,17 @@ def test_warabandi_endpoint_flow(client, db_session):
         assert updated["canal_turn_day"] == "Tuesday"
         assert updated["tubewell_power_source"] == "solar"
 
+
+def test_canal_location_auto_inference():
+    """Verify that district names and coordinates accurately map to Punjab canal commands."""
+    assert warabandi_engine.infer_canal_from_location(district="Okara") == "Lower Bari Doab Canal (LBDC)"
+    assert warabandi_engine.infer_canal_from_location(district="Faisalabad") == "Lower Chenab Canal (LCC)"
+    assert warabandi_engine.infer_canal_from_location(district="Gujranwala") == "Upper Chenab Canal"
+    assert warabandi_engine.infer_canal_from_location(district="Multan") == "Sidhnai Canal"
+    assert warabandi_engine.infer_canal_from_location(district="Muzaffargarh") == "Muzaffargarh Canal"
+    assert warabandi_engine.infer_canal_from_location(district="Bhakkar") == "Thal Canal"
+
+    # Coordinate fallbacks
+    assert warabandi_engine.infer_canal_from_location(lat=30.8, lon=73.4) == "Lower Bari Doab Canal (LBDC)"
+    assert warabandi_engine.infer_canal_from_location(lat=31.4, lon=73.1) == "Lower Chenab Canal (LCC)"
+

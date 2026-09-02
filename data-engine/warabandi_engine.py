@@ -54,6 +54,99 @@ DEFAULT_KC_BY_STAGE: dict[str, float] = {
 }
 
 
+PUNJAB_CANAL_COMMAND_DISTRICTS: dict[str, str] = {
+    # Bari Doab
+    "okara": "Lower Bari Doab Canal (LBDC)",
+    "sahiwal": "Lower Bari Doab Canal (LBDC)",
+    "khanewal": "Lower Bari Doab Canal (LBDC)",
+    "pakpattan": "Lower Bari Doab Canal (LBDC)",
+    "lahore": "Central Bari Doab Canal (CBDC)",
+    "kasur": "Central Bari Doab Canal (CBDC)",
+    "vehari": "Fordwah Canal",
+    "bahawalnagar": "Fordwah Canal",
+
+    # Rechna Doab
+    "faisalabad": "Lower Chenab Canal (LCC)",
+    "toba tek singh": "Lower Chenab Canal (LCC)",
+    "jhang": "Lower Chenab Canal (LCC)",
+    "chiniot": "Lower Chenab Canal (LCC)",
+    "nankana sahib": "Lower Chenab Canal (LCC)",
+    "hafizabad": "Lower Chenab Canal (LCC)",
+    "gujranwala": "Upper Chenab Canal",
+    "sialkot": "Upper Chenab Canal",
+    "sheikhupura": "Upper Chenab Canal",
+    "narowal": "Upper Chenab Canal",
+
+    # Chaj Doab
+    "sargodha": "Lower Jhelum Canal",
+    "mandi bahauddin": "Lower Jhelum Canal",
+    "gujrat": "Upper Jhelum Canal",
+    "jhelum": "Upper Jhelum Canal",
+    "rawalpindi": "Upper Jhelum Canal",
+    "chakwal": "Upper Jhelum Canal",
+    "attock": "Upper Jhelum Canal",
+
+    # Thal / Sindh Sagar Doab
+    "bhakkar": "Thal Canal",
+    "layyah": "Thal Canal",
+    "khushab": "Thal Canal",
+    "mianwali": "Thal Canal",
+
+    # Lower Punjab & Indus
+    "multan": "Sidhnai Canal",
+    "lodhran": "Sidhnai Canal",
+    "muzaffargarh": "Muzaffargarh Canal",
+    "kot addu": "Muzaffargarh Canal",
+    "dera ghazi khan": "Dera Ghazi Khan Canal",
+    "dg khan": "Dera Ghazi Khan Canal",
+    "rajanpur": "Dera Ghazi Khan Canal",
+    "bahawalpur": "Panjnad & Abbasia Canals",
+    "rahim yar khan": "Panjnad & Abbasia Canals",
+}
+
+
+def infer_canal_from_location(
+    district: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+) -> str:
+    """Infer the Punjab Irrigation Department canal system from district or (lat, lon)."""
+    if district:
+        clean = district.strip().lower()
+        for k, canal in PUNJAB_CANAL_COMMAND_DISTRICTS.items():
+            if k in clean:
+                return canal
+
+    # Coordinate bounding boxes if district is unknown
+    if lat is not None and lon is not None:
+        if 30.3 <= lat <= 31.3 and 72.8 <= lon <= 74.0:
+            return "Lower Bari Doab Canal (LBDC)"
+        if 30.8 <= lat <= 31.9 and 72.3 <= lon <= 73.6:
+            return "Lower Chenab Canal (LCC)"
+        if 31.8 <= lat <= 32.7 and 73.8 <= lon <= 75.0:
+            return "Upper Chenab Canal"
+        if 31.0 <= lat <= 31.8 and 74.0 <= lon <= 74.6:
+            return "Central Bari Doab Canal (CBDC)"
+        if 29.8 <= lat <= 30.6 and 71.0 <= lon <= 72.2:
+            return "Sidhnai Canal"
+        if 29.8 <= lat <= 30.9 and 70.7 <= lon <= 71.4:
+            return "Muzaffargarh Canal"
+        if 29.5 <= lat <= 30.9 and 70.0 <= lon <= 70.8:
+            return "Dera Ghazi Khan Canal"
+        if 30.7 <= lat <= 32.2 and 70.8 <= lon <= 71.9:
+            return "Thal Canal"
+        if 29.5 <= lat <= 30.5 and 72.5 <= lon <= 74.0:
+            return "Fordwah Canal"
+        if 28.0 <= lat <= 29.8 and 69.8 <= lon <= 72.0:
+            return "Panjnad & Abbasia Canals"
+        if 31.7 <= lat <= 32.7 and 72.2 <= lon <= 73.5:
+            return "Lower Jhelum Canal"
+        if 32.4 <= lat <= 33.5 and 73.4 <= lon <= 74.5:
+            return "Upper Jhelum Canal"
+
+    return "Lower Bari Doab Canal (LBDC)"
+
+
 def get_crop_kc(stage_name: str | None) -> float:
     """Return FAO-56 crop coefficient Kc based on phenological stage."""
     if not stage_name:
