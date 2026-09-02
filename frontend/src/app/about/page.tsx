@@ -24,16 +24,16 @@ export default function AboutPage() {
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink leading-tight">
           {isUrdu ? (
             <>
-              خلائی سیٹلائٹ ڈیٹا تے انڈس بیسن واٹر مینجمنٹ دا{" "}
+              پنجاب دی زراعت، نہری پانی تے{" "}
               <span className="bg-gradient-to-r from-emerald-400 via-brand to-lime-300 bg-clip-text text-transparent">
-                انقلابی امتزاج
+                سیٹلائٹ ڈیجیٹل ٹوئن
               </span>
             </>
           ) : (
             <>
-              Space-Age Telemetry Meets{" "}
+              Indus Basin Agriculture &{" "}
               <span className="bg-gradient-to-r from-emerald-400 via-brand to-lime-300 bg-clip-text text-transparent">
-                Indus Basin Agriculture
+                Satellite Digital Twin
               </span>
             </>
           )}
@@ -41,8 +41,8 @@ export default function AboutPage() {
 
         <p className="text-sm sm:text-base text-mist leading-relaxed">
           {isUrdu
-            ? "ایگری ٹوئن پنجاب دے کساناں تے محکمہ زراعت لئی تیار کیتا گیا ہک جدید ڈیجیٹل ٹوئن اے جو وارابندی نہری پانی دی تقسیم، ڈیزل ٹیوب ویل دے اخراجات دی بچت، سیٹلائٹ این ڈی وی آئی تے مٹی دی طبعی خصوصیات نوں یکجا کردا اے۔"
-            : "AgriTwin is Pakistan’s first satellite-ground digital twin platform, translating real-time Earth observation, soil physics, and canal rotational rights into money-saving decisions for farmers and agronomists."}
+            ? "ایگری ٹوئن اوپن سیٹلائٹ امیجری، موسمیاتی ڈیٹا تے وارابندی نہری باری دے شیڈول نوں جوڑ کے کساناں لئی ڈیزل دی بچت تے بہتر زرعی فیصلے کرن وچ مدد فراہم کردا اے۔"
+            : "AgriTwin explores how open satellite observations, weather forecasts, and canal rotational schedules (Warabandi) can help Punjab farmers and agricultural extension officers manage water and crop health more effectively."}
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -253,71 +253,102 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* ── Engineering & Development Team ──────────────────────────────────── */}
+      {/* ── Collaborative Development Team ─────────────────────────────────── */}
       <div className="glass-panel p-6 sm:p-8 border-ink/8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full pointer-events-none" />
         <div className="text-center mb-6">
           <span className="text-xs font-mono uppercase tracking-wider text-brand">
-            {isUrdu ? "انجینئرنگ تے ڈویلپمنٹ" : "Engineering & Architecture"}
+            {isUrdu ? "ڈویلپمنٹ ٹیم" : "The Team"}
           </span>
           <h2 className="text-xl sm:text-2xl font-bold text-ink mt-1">
-            {isUrdu ? "ایگری ٹوئن ڈویلپمنٹ ٹیم" : "The Team Behind AgriTwin"}
+            {isUrdu ? "ایگری ٹوئن ڈویلپرز" : "Built by Aliyan Adil & Muhammad Nizamudeen"}
           </h2>
           <p className="text-xs text-mist mt-1 max-w-xl mx-auto">
             {isUrdu
-              ? "پاکستان دی زراعت نوں جدید ترین خلائی سیٹلائٹ ٹیکنالوجی، مصنوعی ذہانت تے انڈس واٹر نیٹ ورک نال جوڑن والی سرشار ٹیم۔"
-              : "Built with passion to modernize Pakistan's agriculture through space-age remote sensing, machine learning, and Indus Basin water modeling."}
+              ? "ایہہ ہک باہمی کولیبوریٹو ہیکاتھون پراجیکٹ اے جو پنجاب دی زراعت، نہری نظام تے مٹی دے ڈیٹا نوں ڈیجیٹل ٹوئن نال جوڑن لئی بنایا گیا اے۔"
+              : "A collaborative project exploring practical digital twin tools for Pakistani agriculture, combining canal water management, weather tracking, and soil analytics."}
           </p>
         </div>
 
-        <div className="max-w-2xl mx-auto">
-          <div className="rounded-2xl border border-ink/10 bg-ink/[0.02] p-5 sm:p-6 flex flex-col sm:flex-row items-center sm:items-start gap-5 hover:border-brand/30 transition-all">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-abyss font-extrabold text-2xl shadow-lg ring-2 ring-emerald-400/30 shrink-0">
-              A
-            </div>
-            <div className="space-y-2 text-center sm:text-left flex-1">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-base font-bold text-ink">Aliyan Adil</h3>
-                  <p className="text-xs text-brand font-medium">Lead AI Engineer & System Architect</p>
-                </div>
-                <div className="flex items-center justify-center sm:justify-end gap-2">
-                  <a
-                    href="https://github.com/aliyan212"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-ink/10 bg-ink/5 px-2.5 py-1 text-xs font-semibold text-mist hover:text-ink hover:bg-ink/10 transition-colors"
-                  >
-                    <span>GitHub</span>
-                    <Icon name="externalLink" size={10} className="text-dim" />
-                  </a>
-                  <a
-                    href="mailto:aliyanadil6@outlook.com"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-brand/30 bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand hover:bg-brand/20 transition-colors"
-                  >
-                    <span>Contact</span>
-                  </a>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
+          {/* Aliyan Adil */}
+          <div className="rounded-2xl border border-ink/10 bg-ink/[0.02] p-5 flex flex-col justify-between hover:border-brand/30 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 text-brand font-bold text-lg ring-1 ring-brand/30">
+                    A
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-ink">Aliyan Adil</h3>
+                    <p className="text-[11px] text-mist">Frontend & Android Developer</p>
+                  </div>
                 </div>
               </div>
 
-              <p className="text-xs text-mist leading-relaxed">
-                Specializing in AI systems, remote sensing pipelines, and geospatial engineering. Architected the Indus Basin Warabandi irrigation router, Saxton-Rawls soil hydraulics engine, and thermal phenology models powering AgriTwin.
+              <p className="text-xs text-mist leading-relaxed mb-4">
+                Specializes in Android development, Java, and modern web frontends. Focused on the user interface, interaction design, and client-side data flows in AgriTwin.
               </p>
+            </div>
 
-              <div className="flex flex-wrap gap-1.5 pt-1 justify-center sm:justify-start">
+            <div className="pt-3 border-t border-ink/6 flex items-center justify-between">
+              <div className="flex flex-wrap gap-1">
                 <span className="rounded-md border border-ink/8 bg-ink/[0.03] px-2 py-0.5 text-[10px] font-mono text-dim">
-                  Full-Stack Next.js 16
+                  Android & Java
                 </span>
                 <span className="rounded-md border border-ink/8 bg-ink/[0.03] px-2 py-0.5 text-[10px] font-mono text-dim">
-                  FastAPI & Python 3.12
-                </span>
-                <span className="rounded-md border border-ink/8 bg-ink/[0.03] px-2 py-0.5 text-[10px] font-mono text-dim">
-                  Geospatial & Leaflet GIS
-                </span>
-                <span className="rounded-md border border-ink/8 bg-ink/[0.03] px-2 py-0.5 text-[10px] font-mono text-dim">
-                  NASA MODIS & ISRIC APIs
+                  Next.js & UI
                 </span>
               </div>
+              <a
+                href="https://github.com/aliyan212"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+              >
+                <span>GitHub</span>
+                <Icon name="externalLink" size={10} />
+              </a>
+            </div>
+          </div>
+
+          {/* Muhammad Nizamudeen */}
+          <div className="rounded-2xl border border-ink/10 bg-ink/[0.02] p-5 flex flex-col justify-between hover:border-sky-500/30 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 text-sky-400 font-bold text-lg ring-1 ring-sky-400/30">
+                    N
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-ink">Muhammad Nizamudeen</h3>
+                    <p className="text-[11px] text-mist">Developer & Collaborator</p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-mist leading-relaxed mb-4">
+                Co-developer and engineering collaborator working on system logic, integration workflows, and data pipelines for the AgriTwin prototype.
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-ink/6 flex items-center justify-between">
+              <div className="flex flex-wrap gap-1">
+                <span className="rounded-md border border-ink/8 bg-ink/[0.03] px-2 py-0.5 text-[10px] font-mono text-dim">
+                  Co-Developer
+                </span>
+                <span className="rounded-md border border-ink/8 bg-ink/[0.03] px-2 py-0.5 text-[10px] font-mono text-dim">
+                  Engineering
+                </span>
+              </div>
+              <a
+                href="https://github.com/muhammadnazamuddeen-dot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-sky-400 hover:underline"
+              >
+                <span>GitHub</span>
+                <Icon name="externalLink" size={10} />
+              </a>
             </div>
           </div>
         </div>
