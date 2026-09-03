@@ -59,9 +59,8 @@ export default function LazyCard({
         animationDelay: `${delayMs}ms`,
         animationFillMode: "both",
       }}
-      className={`transition-all duration-300 ${
-        isVisible ? "animate-card-enter opacity-100" : "opacity-0 translate-y-4"
-      } ${className}`}
+      className={`transition-all duration-300 ${isVisible ? "animate-card-enter opacity-100" : "opacity-0 translate-y-4"
+        } ${className}`}
     >
       {loading && skeleton ? skeleton : isVisible ? children : skeleton || null}
     </div>
